@@ -12,31 +12,28 @@
       <div>
         <div class="min_title">工单信息</div>
         <el-row>
-          <el-col :span="12">
-            <el-form-item label="进件渠道" prop="entryChannel">
-              <el-cascader
-                v-model="form.entryChannel"
-                :options="dict.type.dm_entry_channel.options"
-                :props="{ expandTrigger: 'hover', emitPath: false }"
-                clearable
-                style="width: 100%"
-                disabled
-              />
-<!--              <el-select-->
-<!--                v-model="form.entryChannel"-->
-<!--                style="width: 100%"-->
-<!--                disabled-->
-<!--              >-->
-<!--                <el-option-->
-<!--                  v-for="dict in dict.type.dm_entry_channel"-->
-<!--                  :key="dict.value"-->
-<!--                  :label="dict.label"-->
-<!--                  :value="dict.value"-->
-<!--                ></el-option>-->
-<!--              </el-select>-->
-            </el-form-item>
-          </el-col>
-        </el-row>
+            <el-col :span="12">
+              <el-form-item label="进件渠道" prop="entryChannel">
+                <el-cascader
+                  v-model="form.entryChannel"
+                  :options="dict.type.dm_entry_channel.options"
+                  :props="{ expandTrigger: 'hover', emitPath: false }"
+                  clearable
+                  style="width: 100%"
+                  disabled
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="案件类型" prop="markCaseType">
+                <el-select v-model="form.markCaseType" placeholder="请选择案件类型" clearable style="width: 100%">
+                  <el-option label="小额快处/简易案件" value="10" />
+                  <el-option label="普通案件" value="20" />
+                  <el-option label="复杂案件" value="30" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
       </div>
       <div>
         <div class="min_title">委托人信息</div>
@@ -1031,6 +1028,9 @@ export default {
         isHighRisk: [
           { required: true, message: "是否高危客群为必填项", trigger: "change" },
         ],
+        markCaseType: [
+          { required: true, message: '案件类型为必填项', trigger: 'change' },
+        ],
         disputeDate: [
           { required: true, message: "纠纷发生日期为必填项", trigger: "blur" },
         ],
@@ -1288,6 +1288,8 @@ export default {
         solution: null,
         solutionAmount: null,
         policyholder: null,
+        markCaseType: null,
+        markCaseType: null,
         insured: null,
         cashValue: null,
         lossAssessmentAmount: null,

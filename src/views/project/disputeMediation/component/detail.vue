@@ -30,14 +30,11 @@
                   style="width: 100%"
                   disabled
                 />
-                <!--              <el-select v-model="form.entryChannel" style="width: 100%" disabled>-->
-                <!--                <el-option-->
-                <!--                  v-for="dict in dict.type.dm_entry_channel"-->
-                <!--                  :key="dict.value"-->
-                <!--                  :label="dict.label"-->
-                <!--                  :value="dict.value"-->
-                <!--                ></el-option>-->
-                <!--              </el-select>-->
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="案件类型" prop="markCaseType">
+                <el-input v-model="markCaseTypeText" readonly />
               </el-form-item>
             </el-col>
           </el-row>
@@ -1246,6 +1243,18 @@ export default {
   computed: {
     DM_FINISH_TYPE() {
       return DM_FINISH_TYPE
+    },
+    markCaseTypeText() {
+      switch (this.form.markCaseType) {
+        case "10":
+          return "小额快处/简易案件";
+        case "20":
+          return "普通案件";
+        case "30":
+          return "复杂案件";
+        default:
+          return "-";
+      }
     }
   },
   dicts: [

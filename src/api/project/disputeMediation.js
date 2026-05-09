@@ -62,6 +62,15 @@ export function updateDisputeMediation(data) {
     });
 }
 
+// 更新满意度
+export function updateSatisfactionScore(data) {
+    return request({
+        url: '/project/disputeMediation/updateSatisfactionScore',
+        method: 'put',
+        data: data
+    });
+}
+
 // 修改纠纷业务工单附件
 export function updateDisputeMediationAttachment(data) {
   return request({

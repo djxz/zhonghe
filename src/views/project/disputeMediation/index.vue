@@ -487,6 +487,9 @@
             <el-button size="mini" type="text" icon="el-icon-edit" @click="handleFeedback2(row)" v-if="$store.getters.userInfo.isDMInstitutionHandle && DM_STATUS.DM_STATUS20 !== row.status && SYS_YES_NO.sys_yes === row.deptAcceptMediate && !DM_ENTRY_CHANNEL.COURT.includes(row.entryChannel)">
               {{ DM_STATUS.DM_STATUS3 === row.status && !row.feedbackTime ? "补充反馈单" : "修改反馈单" }}
             </el-button>
+            <el-button size="mini" type="text" icon="el-icon-star-off" @click="openSatisfactionDialog(row)" v-if="$store.getters.userInfo.isDMInstitutionHandle && SYS_YES_NO.sys_yes === row.deptAcceptMediate && !DM_ENTRY_CHANNEL.COURT.includes(row.entryChannel) && (DM_STATUS.DM_STATUS10 === row.status || DM_STATUS.DM_STATUS20 === row.status)">
+              满意度
+            </el-button>
           </template>
 
           <template v-hasPermi="['project:disputeMediation:mediationRoomReservation', 'project:disputeMediation:mediationRoomUse']">
@@ -713,6 +716,26 @@
     </template>
 
     <view-file ref="fileViewer"/>
+
+    <el-dialog title="满意度" :visible.sync="satisfactionDialog.visible" width="400px" append-to-body @close="resetSatisfactionForm">
+      <el-form ref="satisfactionFormRef" :model="satisfactionDialog.form" :rules="satisfactionRules" label-width="90px">
+        <el-form-item label="满意度" prop="satisfactionScore">
+          <el-input-number
+            v-model="satisfactionDialog.form.satisfactionScore"
+            :min="0"
+            :max="100"
+            :precision="0"
+            controls-position="right"
+            placeholder="0-100"
+            style="width: 100%"
+          />
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="satisfactionDialog.visible = false">取 消</el-button>
+        <el-button type="primary" :loading="satisfactionSubmitLoading" @click="submitSatisfaction">确 定</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -744,6 +767,7 @@ import {
   mediatorList,
   cancelMediatorReminder,
   rollbackStatus,
+  updateSatisfactionScore,
 } from "@/api/project/disputeMediation";
 
 /* component */
@@ -978,6 +1002,26 @@ export default {
       showFloatingButton: true,
       mediatorOptions: [], // 调解员选项
       advancedSearch: false,
+      satisfactionDialog: {
+        visible: false,
+        workOrderId: null,
+        form: {
+          satisfactionScore: null,
+        },
+      },
+      satisfactionRules: {
+        satisfactionScore: [
+          { required: true, message: "请输入满意度", trigger: "blur" },
+          {
+            type: "number",
+            min: 0,
+            max: 100,
+            message: "满意度范围为 0-100",
+            trigger: "blur",
+          },
+        ],
+      },
+      satisfactionSubmitLoading: false,
     };
   },
   created() {
@@ -1501,6 +1545,54 @@ export default {
     handleFeedback2(row) {
       this.feedbackTitle = (!row.feedbackTime ? "补充反馈单:" : "修改反馈单:") + row.workOrderId;
       this.$refs.feedback2Ref.open(row);
+    },
+
+    openSatisfactionDialog(row) {
+      this.satisfactionDialog.workOrderId = row.workOrderId;
+      const s = row.satisfactionScore;
+      if (s !== null && s !== undefined && s !== "") {
+        const n = Number(s);
+        this.satisfactionDialog.form.satisfactionScore = Number.isNaN(n) ? null : n;
+      } else {
+        this.satisfactionDialog.form.satisfactionScore = null;
+      }
+      this.satisfactionDialog.visible = true;
+      this.$nextTick(() => {
+        if (this.$refs.satisfactionFormRef) {
+          this.$refs.satisfactionFormRef.clearValidate();
+        }
+      });
+    },
+
+    resetSatisfactionForm() {
+      this.satisfactionDialog.workOrderId = null;
+      this.satisfactionDialog.form.satisfactionScore = null;
+      this.$nextTick(() => {
+        if (this.$refs.satisfactionFormRef) {
+          this.$refs.satisfactionFormRef.clearValidate();
+        }
+      });
+    },
+
+    submitSatisfaction() {
+      this.$refs.satisfactionFormRef.validate((valid) => {
+        if (!valid) {
+          return;
+        }
+        this.satisfactionSubmitLoading = true;
+        updateSatisfactionScore({
+          workOrderId: this.satisfactionDialog.workOrderId,
+          satisfactionScore: String(this.satisfactionDialog.form.satisfactionScore),
+        })
+          .then(() => {
+            this.$modal.msgSuccess("操作成功");
+            this.satisfactionDialog.visible = false;
+            this.getList();
+          })
+          .finally(() => {
+            this.satisfactionSubmitLoading = false;
+          });
+      });
     },
 
     // 刷新预约日历

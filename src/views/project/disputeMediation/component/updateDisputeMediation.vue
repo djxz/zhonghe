@@ -26,6 +26,15 @@
 <!--              </el-select>-->
             </el-form-item>
           </el-col>
+          <el-col :span="12">
+            <el-form-item label="案件类型" prop="markCaseType" :rules="disabled ? [] : [{ required: true, message: '请选择案件类型', trigger: 'change' }]">
+              <el-select v-model="form.markCaseType" :placeholder="disabled ? '' : '请选择案件类型'" clearable style="width: 100%" :disabled="disabled">
+                <el-option label="小额快处/简易案件" value="10" />
+                <el-option label="普通案件" value="20" />
+                <el-option label="复杂案件" value="30" />
+              </el-select>
+            </el-form-item>
+          </el-col>
         </el-row>
       </div>
       <div>
@@ -1524,6 +1533,7 @@ export default {
         deptContactPhone: null,
         deptContactPosition: null,
         entryChannel: null,
+        markCaseType: null,
         deptArea: null,
         level: null,
         businessType1: null,
