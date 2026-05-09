@@ -144,6 +144,21 @@ export const DM_STATUS = {
   DM_STATUS20: "20", // 已归档
 };
 
+/** 纠纷工单标记案件类型（扩展服务） */
+export const MARK_CASE_TYPE_LABEL = {
+  "10": "小额快处/简易案件",
+  "20": "普通案件",
+  "30": "复杂案件",
+};
+
+export function formatMarkCaseTypeLabel(val) {
+  if (val === undefined || val === null || val === "") {
+    return "—";
+  }
+  const key = String(val);
+  return MARK_CASE_TYPE_LABEL[key] || key;
+}
+
 // 身份证类型
 export const CERT_TYPE = {
   CERT_TYPE0: "0", // 身份证

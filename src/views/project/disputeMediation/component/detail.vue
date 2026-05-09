@@ -40,6 +40,11 @@
                 <!--              </el-select>-->
               </el-form-item>
             </el-col>
+            <el-col :span="12">
+              <el-form-item label="案件类型" prop="markCaseType">
+                <el-input :value="formatMarkCaseTypeLabel(form.markCaseType)" readonly placeholder="" />
+              </el-form-item>
+            </el-col>
           </el-row>
         </div>
         <div>
@@ -1233,9 +1238,10 @@ import {
   SYS_SEX,
   DM_ACCEPT_STATUS,
   DM_ENTRY_CHANNEL,
-  CERT_TYPE, DM_FINISH_TYPE,
+  CERT_TYPE, DM_FINISH_TYPE, formatMarkCaseTypeLabel,
 } from "@/views/constant/CommonConstant.js";
 import FileList from "@/components/FileList/index.vue";
+import { getDisputeMediationExpandInfo } from "@/api/project/disputeMediation";
 
 export default {
   name: "Detail",
@@ -1284,6 +1290,7 @@ export default {
       DM_ACCEPT_STATUS: DM_ACCEPT_STATUS, // 纠纷业务受理状态
       DM_ENTRY_CHANNEL: DM_ENTRY_CHANNEL, // 纠纷业务进件渠道
       CERT_TYPE: CERT_TYPE, // 身份证类型,
+      formatMarkCaseTypeLabel: formatMarkCaseTypeLabel,
     };
   },
   watch: {
@@ -1334,6 +1341,13 @@ export default {
     open(row) {
       this.form = { ...row };
       this.visible = true;
+      getDisputeMediationExpandInfo(row.workOrderId)
+        .then((res) => {
+          if (res.data != null && res.data.markCaseType != null && res.data.markCaseType !== "") {
+            this.$set(this.form, "markCaseType", String(res.data.markCaseType));
+          }
+        })
+        .catch(() => {});
     },
     cancel() {
       this.visible = false;

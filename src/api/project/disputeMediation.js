@@ -1,4 +1,11 @@
 import request from '@/utils/request';
+import conf from '@/conf';
+
+function expandServiceUrl(path) {
+  const base = String(conf.server.expandBaseUrl || '').replace(/\/$/, '');
+  const p = path.startsWith('/') ? path : `/${path}`;
+  return `${base}${p}`;
+}
 
 // 查询纠纷业务工单列表
 export function listDisputeMediation(query) {
@@ -621,5 +628,21 @@ export function rollbackStatus(data) {
     url: "/project/disputeMediation/rollbackStatus",
     method: "put",
     data: data,
+  });
+}
+
+// 纠纷扩展服务：工单扩展信息（案件类型、满意度等），使用 expandBaseUrl 全路径
+export function getDisputeMediationExpandInfo(workOrderId) {
+  return request({
+    url: expandServiceUrl(`/project/disputeMediationExpand/getWorkOrderInfo/${workOrderId}`),
+    method: "get",
+  });
+}
+
+export function saveOrUpdateDisputeMediationExpand(data) {
+  return request({
+    url: expandServiceUrl("/project/disputeMediationExpand/saveOrUpdate"),
+    method: "post",
+    data,
   });
 }

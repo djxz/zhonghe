@@ -487,6 +487,9 @@
             <el-button size="mini" type="text" icon="el-icon-edit" @click="handleFeedback2(row)" v-if="$store.getters.userInfo.isDMInstitutionHandle && DM_STATUS.DM_STATUS20 !== row.status && SYS_YES_NO.sys_yes === row.deptAcceptMediate && !DM_ENTRY_CHANNEL.COURT.includes(row.entryChannel)">
               {{ DM_STATUS.DM_STATUS3 === row.status && !row.feedbackTime ? "补充反馈单" : "修改反馈单" }}
             </el-button>
+            <el-button size="mini" type="text" icon="el-icon-star-on" @click="handleSatisfaction(row)" v-if="$store.getters.userInfo.isDMInstitutionHandle && SYS_YES_NO.sys_yes === row.deptAcceptMediate && !DM_ENTRY_CHANNEL.COURT.includes(row.entryChannel) && [DM_STATUS.DM_STATUS10, DM_STATUS.DM_STATUS20].includes(row.status)">
+              满意度
+            </el-button>
           </template>
 
           <template v-hasPermi="['project:disputeMediation:mediationRoomReservation', 'project:disputeMediation:mediationRoomUse']">
@@ -641,6 +644,25 @@
     <!-- 纠纷业务详情 -->
     <Detail ref="detailRef" :title="detailTitle" :deptOptions="deptOptions" :deptMap="deptMap" @minimize="minimize"/>
 
+    <el-dialog title="满意度" :visible.sync="satisfactionOpen" width="420px" append-to-body :close-on-click-modal="false">
+      <el-form :model="satisfactionForm" label-width="88px">
+        <el-form-item label="满意度">
+          <el-input-number
+            v-model="satisfactionForm.satisfactionScore"
+            :min="0"
+            :max="100"
+            :precision="0"
+            controls-position="right"
+            style="width: 100%"
+            placeholder="0-100"
+          />
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="satisfactionOpen = false">取 消</el-button>
+        <el-button type="primary" :loading="satisfactionLoading" @click="submitSatisfaction">确 定</el-button>
+      </div>
+    </el-dialog>
 
     <!-- 预约调解室 -->
     <MediationRoomReservation ref="mediationRoomReservationRef" :title="mediationRoomReservationTitle" @callback="checkOpen"/>
@@ -744,6 +766,8 @@ import {
   mediatorList,
   cancelMediatorReminder,
   rollbackStatus,
+  getDisputeMediationExpandInfo,
+  saveOrUpdateDisputeMediationExpand,
 } from "@/api/project/disputeMediation";
 
 /* component */
@@ -882,6 +906,12 @@ export default {
       detailTitle: "工单详情",
       updateDisputeMediationTitle: "修改工单",
       terminateTitle: "终止",
+      satisfactionOpen: false,
+      satisfactionLoading: false,
+      satisfactionForm: {
+        workOrderId: null,
+        satisfactionScore: undefined,
+      },
 
       // 遮罩层
       loading: true,
@@ -1426,6 +1456,47 @@ export default {
         default:
           break;
       }
+    },
+    /** 满意度（扩展服务） */
+    handleSatisfaction(row) {
+      this.satisfactionForm = {
+        workOrderId: row.workOrderId,
+        satisfactionScore: undefined,
+      };
+      this.satisfactionOpen = true;
+      getDisputeMediationExpandInfo(row.workOrderId)
+        .then((res) => {
+          if (res.data != null && res.data.satisfactionScore != null && res.data.satisfactionScore !== "") {
+            this.satisfactionForm.satisfactionScore = Number(res.data.satisfactionScore);
+          }
+        })
+        .catch(() => {});
+    },
+    submitSatisfaction() {
+      const score = this.satisfactionForm.satisfactionScore;
+      if (score === undefined || score === null) {
+        this.$modal.msgWarning("请输入满意度");
+        return;
+      }
+      const n = Number(score);
+      if (Number.isNaN(n) || n < 0 || n > 100) {
+        this.$modal.msgWarning("满意度范围为 0-100");
+        return;
+      }
+      this.satisfactionLoading = true;
+      saveOrUpdateDisputeMediationExpand({
+        workOrderId: this.satisfactionForm.workOrderId,
+        satisfactionScore: n,
+      })
+        .then(() => {
+          this.satisfactionLoading = false;
+          this.satisfactionOpen = false;
+          this.$modal.msgSuccess("保存成功");
+          this.getList();
+        })
+        .catch(() => {
+          this.satisfactionLoading = false;
+        });
     },
     // 详情
     handleDetail(row) {

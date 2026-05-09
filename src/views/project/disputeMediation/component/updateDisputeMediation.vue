@@ -26,6 +26,23 @@
 <!--              </el-select>-->
             </el-form-item>
           </el-col>
+          <el-col :span="12">
+            <el-form-item label="案件类型" prop="markCaseType">
+              <el-select
+                v-model="form.markCaseType"
+                placeholder="请选择案件类型（非必选）"
+                clearable
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="(label, val) in MARK_CASE_TYPE_LABEL"
+                  :key="val"
+                  :label="label"
+                  :value="val"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
         </el-row>
       </div>
       <div>
@@ -1167,7 +1184,7 @@
 </template>
 
 <script>
-import { updateDisputeMediation, updateDisputeMediationAttachment } from "@/api/project/disputeMediation";
+import { updateDisputeMediation, updateDisputeMediationAttachment, getDisputeMediationExpandInfo, saveOrUpdateDisputeMediationExpand } from "@/api/project/disputeMediation";
 import Treeselect from "@riophae/vue-treeselect";
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 import {
@@ -1179,6 +1196,7 @@ import {
   CERT_TYPE,
   DM_AGREEMENT_STEP,
   DM_STATUS,
+  MARK_CASE_TYPE_LABEL,
 } from "@/views/constant/CommonConstant.js";
 
 export default {
@@ -1344,6 +1362,7 @@ export default {
       DM_ACCEPT_STATUS: DM_ACCEPT_STATUS, // 纠纷业务受理状态
       DM_ENTRY_CHANNEL: DM_ENTRY_CHANNEL, // 纠纷业务进件渠道
       CERT_TYPE: CERT_TYPE, // 身份证类型,
+      MARK_CASE_TYPE_LABEL: MARK_CASE_TYPE_LABEL,
     };
   },
   watch: {
@@ -1672,30 +1691,56 @@ export default {
       // 工单进入审核状态或办结
       this.disabled = DM_STATUS.DM_STATUS4 === this.form.status && this.form.agreementStep != null && DM_AGREEMENT_STEP.AR !== this.form.agreementStep || [DM_STATUS.DM_STATUS10].includes(this.form.status);
       this.visible = true;
+      getDisputeMediationExpandInfo(row.workOrderId)
+        .then((res) => {
+          if (res.data != null && res.data.markCaseType != null && res.data.markCaseType !== "") {
+            this.$set(this.form, "markCaseType", String(res.data.markCaseType));
+          }
+        })
+        .catch(() => {});
+    },
+    /** 扩展服务：保存标记案件类型（主工单接口成功后调用） */
+    syncExpandMarkCaseType(markCaseType) {
+      if (markCaseType === undefined || markCaseType === null || markCaseType === "") {
+        return Promise.resolve();
+      }
+      return saveOrUpdateDisputeMediationExpand({
+        workOrderId: this.form.workOrderId,
+        markCaseType: String(markCaseType),
+      });
     },
     /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate((valid) => {
         if (valid) {
           this.loading = true;
+          const markCaseType = this.form.markCaseType;
+          const payload = { ...this.form };
+          delete payload.markCaseType;
           if (this.disabled) {
-            updateDisputeMediationAttachment(this.form).then((response) => {
-              this.loading = false;
-              this.$modal.msgSuccess("修改成功");
-              this.visible = false;
-              this.$emit('callback');
-            }).catch(() => {
-              this.loading = false;
-            });
+            updateDisputeMediationAttachment(payload)
+              .then(() => this.syncExpandMarkCaseType(markCaseType))
+              .then(() => {
+                this.loading = false;
+                this.$modal.msgSuccess("修改成功");
+                this.visible = false;
+                this.$emit("callback");
+              })
+              .catch(() => {
+                this.loading = false;
+              });
           } else {
-            updateDisputeMediation(this.form).then((response) => {
-              this.loading = false;
-              this.$modal.msgSuccess("修改成功");
-              this.visible = false;
-              this.$emit('callback');
-            }).catch(() => {
-              this.loading = false;
-            });
+            updateDisputeMediation(payload)
+              .then(() => this.syncExpandMarkCaseType(markCaseType))
+              .then(() => {
+                this.loading = false;
+                this.$modal.msgSuccess("修改成功");
+                this.visible = false;
+                this.$emit("callback");
+              })
+              .catch(() => {
+                this.loading = false;
+              });
           }
         }
       });
