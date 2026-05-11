@@ -30,7 +30,7 @@
             <el-form-item label="案件类型" prop="markCaseType">
               <el-select
                 v-model="form.markCaseType"
-                placeholder="请选择案件类型（非必选）"
+                placeholder="请选择案件类型"
                 clearable
                 style="width: 100%"
               >
