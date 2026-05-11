@@ -1706,6 +1706,7 @@ export default {
       }
       return saveOrUpdateDisputeMediationExpand({
         workOrderId: this.form.workOrderId,
+        mediatorUserId: this.form.mediatorUserId,
         markCaseType: String(markCaseType),
       });
     },
