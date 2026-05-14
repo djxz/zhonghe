@@ -36,6 +36,27 @@
                 </el-form-item>
               </el-col>
             </el-row>
+            <el-row>
+              <el-col :span="24">
+                <el-form-item label="图片信息识别">
+                  <el-upload
+                    ref="ocrUpload"
+                    action=""
+                    accept="image/*"
+                    :limit="5"
+                    :http-request="handleOcrUpload"
+                    :before-upload="beforeOcrUpload"
+                    :on-exceed="handleOcrExceed"
+                    :auto-upload="true"
+                  >
+                    <el-button size="mini" type="primary">上传图片</el-button>
+                    <span slot="tip" class="el-upload__tip" style="margin-left: 12px">
+                      支持常见图片格式，用于识别工单相关信息（接口为独立 OCR 服务，全路径请求）
+                    </span>
+                  </el-upload>
+                </el-form-item>
+              </el-col>
+            </el-row>
           </div>
           <div>
             <div class="min_title">委托人信息</div>
@@ -860,6 +881,48 @@ import {
   CERT_TYPE,
 } from "@/views/constant/CommonConstant.js";
 import { v4 as uuidv4 } from 'uuid';
+import axios from 'axios';
+import conf from '@/conf';
+import { getToken } from '@/utils/auth';
+
+/** 与左侧表单 el-input 的 maxlength 一致，OCR 映射时超长则截取 */
+const OCR_FIELD_MAXLENGTH = {
+  agentName: 10,
+  agentPhone: 11,
+  name: 50,
+  phone: 11,
+  age: 3,
+  nation: 26,
+  profession: 20,
+  address: 50,
+  deptAddress: 100,
+  deptArea: 40,
+  deptHandlerName: 10,
+  deptHandlerPhone: 11,
+  level: 10,
+  businessType2: 20,
+  businessType3: 20,
+  insuranceType2: 40,
+  complaintContent: 5000,
+  appeal: 400,
+  deptContact: 10,
+  deptContactPosition: 30,
+  deptContactPhone: 11,
+  product: 40,
+  contract: 40,
+  involveAmount: 12,
+  appealAmount: 12,
+  solutionAmount: 10,
+  solution: 2000,
+  policyholder: 10,
+  insured: 10,
+  cashValue: 10,
+  lossAssessmentAmount: 10,
+  claimAmount: 10,
+  businessCompany: 100,
+  salesman: 10,
+  salesmanJobNum: 20,
+};
 
 export default {
   components: { Treeselect },
@@ -1213,6 +1276,271 @@ export default {
         }
       }
     },
+    beforeOcrUpload(file) {
+      const isImg = file.type && file.type.startsWith("image/");
+      if (!isImg) {
+        this.$modal.msgError("请上传图片文件");
+        return false;
+      }
+      const maxMb = 10;
+      if (file.size / 1024 / 1024 >= maxMb) {
+        this.$modal.msgError(`图片大小不能超过 ${maxMb} MB`);
+        return false;
+      }
+      return true;
+    },
+    handleOcrExceed() {
+      this.$modal.msgError("上传图片数量不能超过 5 张");
+    },
+    handleOcrUpload(option) {
+      const { file, onSuccess, onError } = option;
+      this.$modal.loading("正在上传并识别图片，请稍候...");
+      const fd = new FormData();
+      fd.append("file", file);
+      const headers = {
+        'Content-Type': 'multipart/form-data'
+      };
+      const token = getToken();
+      if (token) {
+        headers.Authorization = "Bearer " + token;
+      }
+      const url = conf.server.ocrUploadUrl;
+      axios
+        .post(url, fd, {
+          headers,
+          timeout: 120000,
+        })
+        .then((res) => {
+          const body = res.data;
+          const code = body && typeof body.code !== "undefined" ? body.code : null;
+          if (res.status < 200 || res.status >= 300) {
+            const msg =
+              (body && body.msg) || `上传失败 (${res.status})`;
+            this.$modal.closeLoading();
+            this.$modal.msgError(msg);
+            onError(new Error(msg));
+            return;
+          }
+          if (body.status != null && body.status !== "success") {
+            const msg = (body && body.msg) || "识别失败";
+            this.$modal.closeLoading();
+            this.$modal.msgError(msg);
+            onError(new Error(msg));
+            return;
+          }
+          if (code !== null && code !== 200) {
+            const msg = (body && body.msg) || "识别失败";
+            this.$modal.closeLoading();
+            this.$modal.msgError(msg);
+            onError(new Error(msg));
+            return;
+          }
+          const mapped = this.applyOcrDataToForm(body);
+          this.$modal.closeLoading();
+          if (mapped < 0) {
+            const msg =
+              (body && body.msg) ||
+              "识别结果中缺少 data 表单字段对象（需与接口约定字段名一致）";
+            this.$modal.msgError(msg);
+            onError(new Error(msg));
+            return;
+          }
+          onSuccess(body, file);
+          this.$modal.msgSuccess(
+            mapped > 0
+              ? "图片识别完成，已根据识别结果填入左侧表单"
+              : "图片识别完成，未识别到可自动填入的文本项（或均为「无」）"
+          );
+        })
+        .catch((err) => {
+          this.$modal.closeLoading();
+          const msg =
+            (err.response && err.response.data && err.response.data.msg) ||
+            err.message ||
+            "上传失败";
+          this.$modal.msgError(msg);
+          onError(err);
+        });
+    },
+    /** OCR 返回中表示“无识别值”、不参与表单映射 */
+    isOcrFieldNoneValue(raw) {
+      if (raw === undefined || raw === null) {
+        return true;
+      }
+      if (typeof raw === "string") {
+        const t = raw.trim();
+        if (!t) {
+          return true;
+        }
+        if (t === "无") {
+          return true;
+        }
+        if (t === '["无"]' || t === "['无']") {
+          return true;
+        }
+      }
+      if (Array.isArray(raw)) {
+        return raw.length === 1 && String(raw[0]).trim() === "无";
+      }
+      return false;
+    },
+    /** @returns {string|null} null 表示跳过该字段映射 */
+    normalizeOcrNumberInputValue(key, strVal) {
+      const s = String(strVal).trim();
+      if (!/\d/.test(s)) {
+        return null;
+      }
+      const noCjk = s.replace(/[\u4e00-\u9fff]/g, "");
+      if (key === "age") {
+        const digits = noCjk.replace(/[^\d]/g, "");
+        if (!digits) {
+          return null;
+        }
+        const n = parseInt(digits, 10);
+        return Number.isFinite(n) ? String(n) : null;
+      }
+      let t = noCjk.replace(/[^\d.]/g, "");
+      if (!t) {
+        return null;
+      }
+      const dot = t.indexOf(".");
+      if (dot === -1) {
+        const n = parseInt(t, 10);
+        return Number.isFinite(n) ? String(n) : null;
+      }
+      const intRaw = t.slice(0, dot).replace(/\./g, "");
+      const intNum = parseInt(intRaw, 10);
+      if (!Number.isFinite(intNum)) {
+        return null;
+      }
+      const intStr = String(intNum);
+      const fracRaw = t.slice(dot + 1).replace(/\./g, "");
+      const frac = fracRaw.slice(0, 2);
+      if (!frac) {
+        return intStr;
+      }
+      return `${intStr}.${frac}`;
+    },
+    /** 联系方式类：无阿拉伯数字不映射；去掉汉字后仅保留数字（与「元」类字段规则一致） */
+    normalizeOcrPhoneInputValue(strVal) {
+      const s = String(strVal).trim();
+      if (!/\d/.test(s)) {
+        return null;
+      }
+      const noCjk = s.replace(/[\u4e00-\u9fff]/g, "");
+      const digits = noCjk.replace(/[^\d]/g, "");
+      return digits.length ? digits : null;
+    },
+    /** 将 OCR 返回的 data 映射到左侧表单；返回值：成功写入的字段数，-1 表示 data 不可用 */
+    applyOcrDataToForm(body) {
+      if (!body || typeof body !== "object") {
+        return -1;
+      }
+      const data = body.data;
+      if (!data || typeof data !== "object" || Array.isArray(data)) {
+        return -1;
+      }
+      if (Object.keys(data).length === 0) {
+        return -1;
+      }
+      const numericInputKeys = new Set([
+        "age",
+        "involveAmount",
+        "appealAmount",
+        "solutionAmount",
+        "cashValue",
+        "lossAssessmentAmount",
+        "claimAmount",
+      ]);
+      const contactPhoneKeys = new Set([
+        "phone",
+        "agentPhone",
+        "deptHandlerPhone",
+        "deptContactPhone",
+      ]);
+      const skipKeys = new Set([
+        "certNum",
+        "agentCertNum",
+        "deptContactCertNum",
+        "deptHandlerCertNum",
+        "salesmanCertNum",
+      ]);
+      const textFieldKeys = new Set([
+        "agentName",
+        "agentPhone",
+        "name",
+        "phone",
+        "age",
+        "nation",
+        "profession",
+        "address",
+        "deptAddress",
+        "deptArea",
+        "deptHandlerName",
+        "deptHandlerPhone",
+        "level",
+        "businessType2",
+        "businessType3",
+        "insuranceType2",
+        "complaintContent",
+        "appeal",
+        "deptContact",
+        "deptContactPosition",
+        "deptContactPhone",
+        "product",
+        "contract",
+        "involveAmount",
+        "appealAmount",
+        "solutionAmount",
+        "solution",
+        "policyholder",
+        "insured",
+        "cashValue",
+        "lossAssessmentAmount",
+        "claimAmount",
+        "businessCompany",
+        "salesman",
+        "salesmanJobNum",
+      ]);
+      let count = 0;
+      Object.keys(data).forEach((key) => {
+        if (!textFieldKeys.has(key) || skipKeys.has(key)) {
+          return;
+        }
+        const raw = data[key];
+        if (this.isOcrFieldNoneValue(raw)) {
+          return;
+        }
+        let strVal;
+        if (typeof raw === "string") {
+          strVal = raw;
+        } else if (typeof raw === "number" && Number.isFinite(raw)) {
+          strVal = String(raw);
+        } else {
+          return;
+        }
+        if (numericInputKeys.has(key)) {
+          const normalized = this.normalizeOcrNumberInputValue(key, strVal);
+          if (normalized == null || normalized === "") {
+            return;
+          }
+          strVal = normalized;
+        } else if (contactPhoneKeys.has(key)) {
+          const normalized = this.normalizeOcrPhoneInputValue(strVal);
+          if (normalized == null || normalized === "") {
+            return;
+          }
+          strVal = normalized;
+        }
+        const cap = OCR_FIELD_MAXLENGTH[key];
+        if (typeof cap === "number" && cap > 0 && strVal.length > cap) {
+          strVal = strVal.slice(0, cap);
+        }
+        this.$set(this.form, key, strVal);
+        count += 1;
+      });
+      return count;
+    },
     // 表单重置
     reset() {
       this.form = {
@@ -1297,6 +1625,11 @@ export default {
         updateTime: null,
       };
       this.resetForm("form");
+      this.$nextTick(() => {
+        if (this.$refs.ocrUpload) {
+          this.$refs.ocrUpload.clearFiles();
+        }
+      });
       if (
         this.DEPT_TYPE.bankList.includes(
           this.$store.getters.userInfo.dept.type
