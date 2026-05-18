@@ -51,7 +51,7 @@
                   >
                     <el-button size="mini" type="primary">上传图片</el-button>
                     <span slot="tip" class="el-upload__tip" style="margin-left: 12px">
-                      支持常见图片格式，用于识别工单相关信息（接口为独立 OCR 服务，全路径请求）
+                      支持常见图片格式，用于识别工单相关信息
                     </span>
                   </el-upload>
                 </el-form-item>
