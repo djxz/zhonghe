@@ -214,6 +214,9 @@ export default {
           }
         }
       }
+      if (nVal) {
+        this.$nextTick(() => this.$refs.investigationRecordForm.refreshTime())
+      }
     },
   },
   created() {

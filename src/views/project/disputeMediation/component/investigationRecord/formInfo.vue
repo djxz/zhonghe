@@ -1,6 +1,6 @@
 <template>
   <div>
-    <el-form :model="formInfo" :rules="rules" ref="investigationRuleForm" label-width="80px">
+    <el-form :model="formInfo" :rules="rules" ref="investigationRuleForm" label-width="85px">
       <el-row>
         <el-col :span="12">
           <el-form-item label="地点" prop="place">
@@ -39,8 +39,8 @@
           </el-form-item>
         </el-col>
         <el-col :span="24">
-          <el-form-item label="记录人" prop="recorder">
-            <el-input v-model="formInfo.recorder" :placeholder="isEdit?'':'请输入记录人'" :disabled="isEdit" maxlength="50" show-word-limit clearable/>
+          <el-form-item label="提交证据或资料名称" prop="recorder">
+            <el-input type="textarea" v-model="formInfo.recorder" :placeholder="isEdit?'':'请输入提交证据或资料名称'" :disabled="isEdit" maxlength="100" show-word-limit clearable/>
           </el-form-item>
         </el-col>
         <el-col :span="24">
@@ -83,7 +83,7 @@ export default {
       rules: {
         time: [{required: true, message: '请选择调查时间', trigger: 'change'}],
         participant: [{required: true, message: '请输入参加人', trigger: 'blur'}],
-        recorder: [{required: true, message: '请输入记录人', trigger: 'blur'}],
+        recorder: [{required: true, message: '请输入提交证据或资料名称', trigger: 'blur'}],
         place: [{required: true, message: '请选择地点', trigger: 'change'}],
         respondent: [{required: true, message: '请输入被调查人', trigger: 'blur'}],
         record: [{required: true, message: '请输入记录', trigger: 'blur'}]
@@ -99,13 +99,13 @@ export default {
           ...newVal
         };
 
-        if (!this.formInfo.recorder) {
-          this.formInfo.recorder = newVal.mediatorName + ',' + newVal.assistantName;
-        }
+        // if (!this.formInfo.recorder) {
+        //   this.formInfo.recorder = newVal.mediatorName + ',' + newVal.assistantName;
+        // }
 
-        if (!this.formInfo.investigationRecordId && !this.formInfo.time) {
-          this.formInfo.time = new Date();
-        }
+        // if (!this.formInfo.investigationRecordId && !this.formInfo.time) {
+        //   this.formInfo.time = new Date();
+        // }
 
         // console.log('this.formInfo', this.formInfo);
       },
@@ -138,7 +138,12 @@ export default {
 
     setFormInfo(data) {
       this.formInfo = { ...this.formInfo, ...data };
-    }
+    },
+
+    // 刷新时间
+    refreshTime() {
+      this.formInfo.time = new Date();
+    },
   }
 };
 </script>
