@@ -236,9 +236,9 @@ export default {
           ...newVal
         };
 
-        if (!this.formInfo.mediationRecordId && !this.formInfo.time) {
-          this.formInfo.time = new Date();
-        }
+        // if (!this.formInfo.mediationRecordId && !this.formInfo.time) {
+        //   this.formInfo.time = new Date();
+        // }
 
         this.formInfo.dsr = newVal.deptContact ? newVal.name + ',' + newVal.deptContact : newVal.name;
       },
@@ -270,7 +270,12 @@ export default {
 
     setFormInfo(data) {
       this.formInfo = { ...this.formInfo, ...data };
-    }
+    },
+
+    // 刷新时间
+    refreshTime() {
+      this.formInfo.time = new Date();
+    },
   }
 };
 </script>

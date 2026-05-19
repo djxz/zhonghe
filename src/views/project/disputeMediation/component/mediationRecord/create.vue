@@ -217,6 +217,9 @@ export default {
           }
         }
       }
+      if (nVal) {
+        this.$nextTick(() => this.$refs.mediationRecordForm.refreshTime())
+      }
     },
   },
   methods: {
