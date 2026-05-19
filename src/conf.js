@@ -31,8 +31,10 @@ export default {
         // baseUrl: _envS('$baseUrl', 'http://172.16.5.171:8080/tj-mediation-server'),
         // baseUrl: _envS('$baseUrl', 'http://172.16.5.199:8080/tj-mediation-server'),
         baseUrl: _envS('$baseUrl', 'http://192.168.2.85:8080/tj-mediation-server'),
+
         /** 纠纷扩展服务（案件类型、满意度等），需全路径对接时可单独配置 */
-        expandBaseUrl: _envS('$expandBaseUrl', 'http://192.168.2.85:8081/tj-mediation-server-expand'),
+        expandBaseUrl: _envS('$expandBaseUrl', 'http://192.168.2.85:6582/tj-mediation-server-expand'),
+
         /** 图片 OCR 识别上传（新服务，须全路径调用） */
         ocrUploadUrl: _envS('$ocrUploadUrl', 'http://192.168.2.2:35000/api/ocr/upload'),
 
