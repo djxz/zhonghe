@@ -43,6 +43,8 @@
                     ref="ocrUpload"
                     action=""
                     accept="image/*"
+                    multiple
+                    :show-file-list="false"
                     :limit="5"
                     :http-request="handleOcrUpload"
                     :before-upload="beforeOcrUpload"
@@ -51,9 +53,22 @@
                   >
                     <el-button size="mini" type="primary">上传图片</el-button>
                     <span slot="tip" class="el-upload__tip" style="margin-left: 12px">
-                      支持常见图片格式，用于识别工单相关信息
+                      支持一次选择多张图片，批量识别工单相关信息
                     </span>
                   </el-upload>
+                  <ul v-if="ocrRecognizeRecords.length" class="recognize-records-list">
+                    <li
+                      v-for="(record, index) in ocrRecognizeRecords"
+                      :key="record.id"
+                      class="recognize-record-item"
+                      :class="{ active: activeOcrRecordId === record.id }"
+                      @click="applyOcrRecord(record)"
+                    >
+                      <span class="record-label">{{ record.label }}</span>
+                      <span class="record-time">{{ record.time }}</span>
+                      <el-button type="text" class="record-delete" @click.stop="removeOcrRecord(index)">删除</el-button>
+                    </li>
+                  </ul>
                 </el-form-item>
               </el-col>
             </el-row>
@@ -675,9 +690,8 @@
       <el-col class="dialog-right" :span="10">
         <div class="right-t">
           <el-form ref="form" :model="diaputeForm" label-width="120px" hide-required-asterisk>
-            <div>
-              <div class="region-title">*消费者信息</div>
-              <el-row class="line-row">
+            <div class="consumer-info-wrap">
+              <el-row class="is-self-row">
                 <el-col :span="24">
                   <el-form-item label="是否消费者本人" prop="isSelf" label-width="200px">
                     <el-radio-group v-model="diaputeForm.isSelf">
@@ -687,7 +701,54 @@
                   </el-form-item>
                 </el-col>
               </el-row>
-              <el-row class="line-row">
+              <div v-if="SYS_YES_NO.sys_no === diaputeForm.isSelf" class="right-section-block agent-section-block">
+                <div class="region-title">*委托人信息</div>
+                <div class="agent-fields-grid">
+                  <el-row class="line-row agent-field-row">
+                    <el-col :span="12">
+                      <el-form-item label="代理人姓名" prop="agentName">
+                        <el-input v-model="diaputeForm.agentName" placeholder="请输入代理人姓名" clearable maxlength="10"
+                          show-word-limit />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="12">
+                      <el-form-item label="联系方式" prop="agentPhone" class="agent-phone-item">
+                        <el-input v-model="diaputeForm.agentPhone" placeholder="请输入联系方式" type="tel" maxlength="11"
+                          show-word-limit clearable oninput="value=value.replace(/[^\d]/g,'')" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <el-row class="line-row agent-field-row">
+                    <el-col :span="12">
+                      <el-form-item label="代理人性别" prop="agentSex">
+                        <el-select v-model="diaputeForm.agentSex" placeholder="请选择代理人性别" clearable>
+                          <el-option v-for="dict in dict.type.sys_user_sex" :key="dict.value" :label="dict.label"
+                            :value="dict.value"></el-option>
+                        </el-select>
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="12">
+                      <el-form-item label="代理人证件类型" prop="agentCertType">
+                        <el-select v-model="diaputeForm.agentCertType" placeholder="请选择代理人证件类型" clearable>
+                          <el-option v-for="dict in dict.type.cert_type" :key="dict.value" :label="dict.label"
+                            :value="dict.value"></el-option>
+                        </el-select>
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <el-row class="line-row agent-field-row agent-field-row-last">
+                    <el-col :span="24">
+                      <el-form-item label="代理人证件号码" prop="agentCertNum">
+                        <el-input v-model="diaputeForm.agentCertNum" placeholder="请输入代理人证件号码"
+                          :maxlength="validCertNumLength(diaputeForm.agentCertType)" show-word-limit clearable />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                </div>
+              </div>
+              <div class="right-section-block">
+                <div class="region-title">*消费者信息</div>
+                <el-row class="line-row">
                 <el-col :span="12">
                   <el-form-item label="消费者姓名" prop="name">
                     <el-input v-model="diaputeForm.name" placeholder="请输入消费者姓名" maxlength="50" show-word-limit />
@@ -700,23 +761,18 @@
                   </el-form-item>
                 </el-col>
               </el-row>
-              <el-row class="line-row">
-                <el-col :span="12">
+                <div class="cert-column-fields">
                   <el-form-item label="证件类型" prop="certType">
-                    <el-select v-model="diaputeForm.certType" placeholder="请选择证件类型" clearable style="width: 100%">
+                    <el-select v-model="diaputeForm.certType" placeholder="请选择证件类型" clearable>
                       <el-option v-for="dict in dict.type.cert_type" :key="dict.value" :label="dict.label"
                         :value="dict.value"></el-option>
                     </el-select>
                   </el-form-item>
-                </el-col>
-                <el-col :span="12">
                   <el-form-item label="证件号码" prop="certNum">
                     <el-input v-model="diaputeForm.certNum" placeholder="请输入证件号码"
-                      :maxlength="this.validCertNumLength(this.form.certType)" show-word-limit clearable
-                      @input="cardNumChange" />
+                      :maxlength="validCertNumLength(diaputeForm.certType)" show-word-limit clearable />
                   </el-form-item>
-                </el-col>
-              </el-row>
+                </div>
               <!-- <el-row class="line-row">
                 <el-col :span="12">
                   <el-form-item label="性别" prop="sex">
@@ -755,9 +811,11 @@
                   </el-form-item>
                 </el-col>
               </el-row>
+              </div>
             </div>
             <div>
               <div class="region-title">*机构信息</div>
+              <!-- 暂时注释：住所地
               <el-row class="line-row">
                 <el-col :span="24">
                   <el-form-item label="住所地" prop="deptAddress">
@@ -766,23 +824,42 @@
                   </el-form-item>
                 </el-col>
               </el-row>
+              -->
               <el-row class="line-row">
-                <el-col :span="12">
-                  <el-form-item label="纠纷发生日期" prop="disputeDate">
-                    <el-date-picker clearable v-model="diaputeForm.disputeDate" type="date" value-format="yyyy-MM-dd"
-                      placeholder="请选择纠纷发生日期" style="width: 100%" :picker-options="{
+                <el-col :span="24">
+                  <el-form-item label="纠纷发生日期" prop="disputeDate" class="dispute-date-form-item">
+                    <el-date-picker
+                      clearable
+                      v-model="diaputeForm.disputeDate"
+                      type="date"
+                      value-format="yyyy-MM-dd"
+                      placeholder="请选择纠纷发生日期"
+                      class="dispute-date-picker"
+                      :picker-options="{
                         disabledDate(time) {
-                          // 禁用所有小于当前日期的日期
                           return time.getTime() > Date.now();
                         },
-                      }">
-                    </el-date-picker>
+                      }"
+                    />
                   </el-form-item>
                 </el-col>
+                <!-- 暂时注释：机构所在地区
                 <el-col :span="12">
                   <el-form-item label="机构所在地区" prop="deptArea">
                     <el-input v-model="diaputeForm.deptArea" placeholder="请输入机构所在地区" clearable maxlength="40"
                       show-word-limit />
+                  </el-form-item>
+                </el-col>
+                -->
+              </el-row>
+              <el-row class="line-row">
+                <el-col :span="12">
+                  <el-form-item label="调解员向当事人电话确认" prop="needCheck" label-width="180px">
+                    <el-select v-model="diaputeForm.needCheck" placeholder="请选择调解员向当事人电话确认" clearable
+                      style="width: 100%">
+                      <el-option v-for="dict in dict.type.sys_yes_no" :key="dict.value" :label="dict.label"
+                        :value="dict.value"></el-option>
+                    </el-select>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -796,13 +873,14 @@
               </el-row>
               <el-row class="line-row">
                 <el-col :span="24">
-                  <el-form-item label="主诉内容" prop="appeal">
+                  <el-form-item label="主要诉求" prop="appeal">
                     <el-input v-model="diaputeForm.appeal" type="textarea" placeholder="请输入内容" clearable maxlength="400"
                       show-word-limit :autosize="{ minRows: 3 }" />
                   </el-form-item>
                 </el-col>
               </el-row>
             </div>
+            <!-- 暂时注释：调解信息
             <div>
               <div class="region-title">*调解信息</div>
               <el-row class="line-row">
@@ -836,7 +914,44 @@
                 </el-col>
               </el-row>
             </div>
+            -->
+            <div>
+              <div class="region-title">*受理信息</div>
+              <el-row class="line-row">
+                <el-col :span="12">
+                  <el-form-item label="受理状态" prop="acceptStatus">
+                    <el-select v-model="diaputeForm.acceptStatus" placeholder="请选择受理状态" style="width: 100%" clearable
+                      @change="diaputeForm.rejectReason = null">
+                      <el-option v-for="dict in dict.type.dm_accept_status" :key="dict.value" :label="dict.label"
+                        :value="dict.value"></el-option>
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12" v-if="DM_ACCEPT_STATUS.reject === diaputeForm.acceptStatus">
+                  <el-form-item label="不予受理原因" prop="rejectReason">
+                    <el-select v-model="diaputeForm.rejectReason" placeholder="请选择不予受理原因" clearable
+                      style="width: 100%">
+                      <el-option v-for="dict in dict.type.dm_reject_reason" :key="dict.value" :label="dict.label"
+                        :value="dict.value"></el-option>
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </div>
           </el-form>
+          <ul v-if="asrRecognizeRecords.length" class="recognize-records-list asr-records">
+            <li class="recognize-records-title">识别记录</li>
+            <li
+              v-for="(record, index) in asrRecognizeRecords"
+              :key="record.id"
+              class="recognize-record-item"
+              :class="{ active: activeAsrRecordId === record.id }"
+              @click="applyAsrRecord(record)"
+            >
+              <span class="record-label">记录 {{ index + 1 }}</span>
+              <span class="record-time">{{ record.time }}</span>
+            </li>
+          </ul>
           <div class="confirm-btn">
             <el-button @click="handelCoverForm">确认信息，自动覆盖</el-button>
           </div>
@@ -1100,6 +1215,13 @@ export default {
       run: false,
       stopStreams: false,
       formId: null,
+      ocrRecognizeRecords: [],
+      activeOcrRecordId: null,
+      ocrBatchFiles: [],
+      ocrBatchOptions: [],
+      ocrBatchTimer: null,
+      asrRecognizeRecords: [],
+      activeAsrRecordId: null,
     };
   },
   watch: {
@@ -1134,6 +1256,11 @@ export default {
         this.$nextTick(() => {
           this.calculateRightBHeight();
           this.sseList = [];
+          this.ocrRecognizeRecords = [];
+          this.activeOcrRecordId = null;
+          this.asrRecognizeRecords = [];
+          this.activeAsrRecordId = null;
+          this.diaputeForm = this.getDefaultDiaputeForm();
           this.formId = uuidv4();
           clearTimeout(this.sseTimeout)
           clearInterval(this.getDataInterval);
@@ -1149,7 +1276,11 @@ export default {
             this.eventSource.close();
           }
           this.getDataInterval = null
-          this.diaputeForm = {}
+          this.diaputeForm = this.getDefaultDiaputeForm()
+          this.ocrRecognizeRecords = []
+          this.activeOcrRecordId = null
+          this.asrRecognizeRecords = []
+          this.activeAsrRecordId = null
           this.run = false
           console.log('SSE 连接已关闭');
         }
@@ -1292,60 +1423,106 @@ export default {
     handleOcrExceed() {
       this.$modal.msgError("上传图片数量不能超过 5 张");
     },
+    /** el-upload 自定义上传：取原生 File（option.file.raw） */
+    resolveUploadRawFile(option) {
+      const f = option && option.file;
+      const raw = f && f.raw != null ? f.raw : f;
+      if (raw instanceof File || raw instanceof Blob) {
+        return raw;
+      }
+      return null;
+    },
+    /** FormData 上传：去掉全局 axios 的 application/json，由浏览器设置 multipart 边界 */
+    postFormData(url, formData, timeout = 120000) {
+      const token = getToken();
+      const headers = token ? { Authorization: "Bearer " + token } : {};
+      return axios.post(url, formData, {
+        headers,
+        timeout,
+        transformRequest: [
+          (data, headerConfig) => {
+            delete headerConfig["Content-Type"];
+            return data;
+          },
+        ],
+      });
+    },
     handleOcrUpload(option) {
-      const { file, onSuccess, onError } = option;
+      const raw = this.resolveUploadRawFile(option);
+      if (!raw) {
+        this.$modal.msgError("无法读取图片文件，请重新选择");
+        option.onError(new Error("invalid upload file"));
+        return;
+      }
+      this.ocrBatchFiles.push(raw);
+      this.ocrBatchOptions.push(option);
+      clearTimeout(this.ocrBatchTimer);
+      this.ocrBatchTimer = setTimeout(() => this.flushOcrBatchUpload(), 80);
+    },
+    flushOcrBatchUpload() {
+      const files = [...this.ocrBatchFiles];
+      const options = [...this.ocrBatchOptions];
+      this.ocrBatchFiles = [];
+      this.ocrBatchOptions = [];
+      if (!files.length) {
+        return;
+      }
       this.$modal.loading("正在上传并识别图片，请稍候...");
       const fd = new FormData();
-      fd.append("file", file);
-      const headers = {
-        'Content-Type': 'multipart/form-data'
-      };
-      const token = getToken();
-      if (token) {
-        headers.Authorization = "Bearer " + token;
+      files.forEach((f) => {
+        fd.append("file", f, f.name);
+      });
+      const url = (conf.server.ocrUploadUrl || "").trim();
+      if (!url || !/^https?:\/\//i.test(url)) {
+        this.$modal.closeLoading();
+        this.$modal.msgError("OCR 上传地址未配置或无效，请检查 conf.server.ocrUploadUrl");
+        options.forEach((opt) => opt.onError(new Error("Invalid ocrUploadUrl")));
+        return;
       }
-      const url = conf.server.ocrUploadUrl;
-      axios
-        .post(url, fd, {
-          headers,
-          timeout: 120000,
-        })
+      const fileLabel = files.map((f) => f.name || "图片").join("、");
+      this.postFormData(url, fd, 120000)
         .then((res) => {
           const body = res.data;
           const code = body && typeof body.code !== "undefined" ? body.code : null;
           if (res.status < 200 || res.status >= 300) {
-            const msg =
-              (body && body.msg) || `上传失败 (${res.status})`;
+            const msg = (body && body.msg) || `上传失败 (${res.status})`;
             this.$modal.closeLoading();
             this.$modal.msgError(msg);
-            onError(new Error(msg));
+            options.forEach((opt) => opt.onError(new Error(msg)));
             return;
           }
           if (body.status != null && body.status !== "success") {
             const msg = (body && body.msg) || "识别失败";
             this.$modal.closeLoading();
             this.$modal.msgError(msg);
-            onError(new Error(msg));
+            options.forEach((opt) => opt.onError(new Error(msg)));
             return;
           }
           if (code !== null && code !== 200) {
             const msg = (body && body.msg) || "识别失败";
             this.$modal.closeLoading();
             this.$modal.msgError(msg);
-            onError(new Error(msg));
+            options.forEach((opt) => opt.onError(new Error(msg)));
             return;
           }
-          const mapped = this.applyOcrDataToForm(body);
-          this.$modal.closeLoading();
-          if (mapped < 0) {
+          const data = body.data;
+          if (!data || typeof data !== "object" || Array.isArray(data)) {
             const msg =
               (body && body.msg) ||
               "识别结果中缺少 data 表单字段对象（需与接口约定字段名一致）";
+            this.$modal.closeLoading();
             this.$modal.msgError(msg);
-            onError(new Error(msg));
+            options.forEach((opt) => opt.onError(new Error(msg)));
             return;
           }
-          onSuccess(body, file);
+          const mapped = this.applyOcrDataToForm(body);
+          const record = this.addOcrRecognizeRecord(data, fileLabel);
+          this.uploadOcrImagesToAttachment(files, record.id);
+          this.$modal.closeLoading();
+          options.forEach((opt) => opt.onSuccess(body, opt.file));
+          if (this.$refs.ocrUpload) {
+            this.$refs.ocrUpload.clearFiles();
+          }
           this.$modal.msgSuccess(
             mapped > 0
               ? "图片识别完成，已根据识别结果填入左侧表单"
@@ -1359,8 +1536,146 @@ export default {
             err.message ||
             "上传失败";
           this.$modal.msgError(msg);
-          onError(err);
+          options.forEach((opt) => opt.onError(err));
         });
+    },
+    uploadOcrImagesToAttachment(files, recordId) {
+      const base = (this._baseUrl || "").trim();
+      if (!base || !/^https?:\/\//i.test(base) || !recordId) {
+        return;
+      }
+      const uploadUrl = `${base.replace(/\/$/, "")}/common/upload`;
+      files.forEach((file) => {
+        const fd = new FormData();
+        const name = file.name || "image.png";
+        fd.append("file", file, name);
+        this.postFormData(uploadUrl, fd, 60000)
+          .then((res) => {
+            const body = res.data;
+            if (body && body.code === 200 && body.fileName) {
+              const record = this.ocrRecognizeRecords.find((r) => r.id === recordId);
+              if (!record) {
+                return;
+              }
+              this.appendOcrRecordAttachment(record, body.fileName);
+              this.appendAttachmentFile(body.fileName);
+            }
+          })
+          .catch(() => {});
+      });
+    },
+    appendOcrRecordAttachment(record, fileName) {
+      if (!record || !fileName) {
+        return;
+      }
+      if (!Array.isArray(record.attachmentFiles)) {
+        this.$set(record, "attachmentFiles", []);
+      }
+      if (!record.attachmentFiles.includes(fileName)) {
+        record.attachmentFiles.push(fileName);
+      }
+    },
+    appendAttachmentFile(fileName) {
+      if (!fileName) {
+        return;
+      }
+      const current = this.form.attachment;
+      if (current && String(current).split(",").includes(fileName)) {
+        return;
+      }
+      this.form.attachment = current ? `${current},${fileName}` : fileName;
+    },
+    removeAttachmentFiles(fileNames) {
+      if (!fileNames || !fileNames.length || !this.form.attachment) {
+        return;
+      }
+      const removeSet = new Set(fileNames.map((f) => String(f).trim()).filter(Boolean));
+      const remaining = String(this.form.attachment)
+        .split(",")
+        .map((f) => f.trim())
+        .filter((f) => f && !removeSet.has(f));
+      this.form.attachment = remaining.length ? remaining.join(",") : null;
+    },
+    addOcrRecognizeRecord(data, label) {
+      const record = {
+        id: uuidv4(),
+        label: label || `识别记录 ${this.ocrRecognizeRecords.length + 1}`,
+        time: this.formatRecordTime(),
+        data: JSON.parse(JSON.stringify(data)),
+        attachmentFiles: [],
+      };
+      this.ocrRecognizeRecords.push(record);
+      this.activeOcrRecordId = record.id;
+      return record;
+    },
+    applyOcrRecord(record) {
+      if (!record || !record.data) {
+        return;
+      }
+      this.activeOcrRecordId = record.id;
+      this.applyOcrDataToForm({ data: record.data });
+    },
+    removeOcrRecord(index) {
+      const removed = this.ocrRecognizeRecords.splice(index, 1)[0];
+      if (removed && removed.attachmentFiles && removed.attachmentFiles.length) {
+        this.removeAttachmentFiles(removed.attachmentFiles);
+      }
+      if (removed && removed.id === this.activeOcrRecordId) {
+        const last = this.ocrRecognizeRecords[this.ocrRecognizeRecords.length - 1];
+        this.activeOcrRecordId = last ? last.id : null;
+      }
+    },
+    getTodayDateStr() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    },
+    getDefaultDiaputeForm() {
+      return {
+        disputeDate: this.getTodayDateStr(),
+        needCheck: SYS_YES_NO.sys_yes,
+        acceptStatus: DM_ACCEPT_STATUS.accept,
+        isSelf: SYS_YES_NO.sys_yes,
+        rejectReason: null,
+      };
+    },
+    formatRecordTime() {
+      const d = new Date();
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    },
+    applyAsrParseResult(data) {
+      if (!data || typeof data !== "object") {
+        return;
+      }
+      const merged = { ...this.getDefaultDiaputeForm(), ...this.diaputeForm, ...data };
+      if (!merged.disputeDate) {
+        merged.disputeDate = this.getTodayDateStr();
+      }
+      if (!merged.needCheck) {
+        merged.needCheck = SYS_YES_NO.sys_yes;
+      }
+      if (!merged.acceptStatus) {
+        merged.acceptStatus = DM_ACCEPT_STATUS.accept;
+      }
+      this.diaputeForm = merged;
+      const record = {
+        id: uuidv4(),
+        time: this.formatRecordTime(),
+        data: JSON.parse(JSON.stringify(data)),
+      };
+      this.asrRecognizeRecords.push(record);
+      this.activeAsrRecordId = record.id;
+      this.$nextTick(() => this.calculateRightBHeight());
+    },
+    applyAsrRecord(record) {
+      if (!record || !record.data) {
+        return;
+      }
+      this.activeAsrRecordId = record.id;
+      this.diaputeForm = { ...this.getDefaultDiaputeForm(), ...record.data };
     },
     /** OCR 返回中表示“无识别值”、不参与表单映射 */
     isOcrFieldNoneValue(raw) {
@@ -1625,6 +1940,11 @@ export default {
         updateTime: null,
       };
       this.resetForm("form");
+      this.ocrRecognizeRecords = [];
+      this.activeOcrRecordId = null;
+      this.asrRecognizeRecords = [];
+      this.activeAsrRecordId = null;
+      this.diaputeForm = this.getDefaultDiaputeForm();
       this.$nextTick(() => {
         if (this.$refs.ocrUpload) {
           this.$refs.ocrUpload.clearFiles();
@@ -1894,7 +2214,7 @@ export default {
                 if (this.completedCount() >= 2) {
                   SSEGetFromData({ content: this.sseList.filter(d => d.complete), type: 2 }).then(res => {
                     if (res.code === 200 && nowFormId === this.formId) {
-                      this.diaputeForm = res.data
+                      this.applyAsrParseResult(res.data)
                     }
                   })
                 } else {
@@ -1914,7 +2234,7 @@ export default {
                 this.run = true
                 SSEGetFromData({ content: this.sseList.filter(d => d.complete), type: 2 }).then(res => {
                   if (res.code === 200 && nowFormId === this.formId) {
-                    this.diaputeForm = res.data
+                    this.applyAsrParseResult(res.data)
                   }
                 })
               }
@@ -1934,8 +2254,10 @@ export default {
     },
 
     handelCoverForm() {
-      this.form = { ...this.form, ...this.diaputeForm }
-      this.cardNumChange(this.form.certNum);
+      this.form = { ...this.form, ...this.diaputeForm };
+      if (this.form.certNum) {
+        this.cardNumChange(this.form.certNum);
+      }
     }
   },
 };
@@ -1965,6 +2287,154 @@ export default {
 
 .dispute-dialog ::v-deep .el-dialog__body {
   padding-top: 0;
+}
+
+.recognize-records-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+
+  .recognize-records-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #303133;
+    margin-bottom: 6px;
+    cursor: default;
+  }
+
+  .recognize-record-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    background: #fff;
+
+    &:hover {
+      border-color: #409eff;
+    }
+
+    &.active {
+      border-color: #0958d9;
+      background: #ecf5ff;
+    }
+
+    .record-label {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .record-time {
+      color: #909399;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    .record-delete {
+      flex-shrink: 0;
+      padding: 0;
+    }
+  }
+
+  &.asr-records {
+    margin: 10px 0;
+    padding: 0 4px;
+  }
+}
+
+.right-t {
+  .dispute-date-form-item {
+    width: 100%;
+  }
+
+  ::v-deep .dispute-date-picker.el-date-editor {
+    width: 100%;
+  }
+
+  .consumer-info-wrap {
+    .is-self-row {
+      padding-top: 16px;
+      margin-bottom: 12px;
+
+      .el-form-item {
+        margin-bottom: 0;
+      }
+    }
+
+    .right-section-block {
+      margin-bottom: 12px;
+    }
+
+    .agent-section-block {
+      padding-bottom: 18px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid #dcdfe6;
+    }
+
+    .agent-fields-grid {
+      .agent-field-row {
+        border-bottom: none;
+        padding-bottom: 18px;
+        margin-bottom: 18px;
+
+        .el-form-item {
+          margin-bottom: 0;
+        }
+      }
+
+      .agent-field-row-last {
+        padding-bottom: 0;
+        margin-bottom: 0;
+      }
+
+      ::v-deep .el-input,
+      ::v-deep .el-select,
+      ::v-deep .el-date-editor {
+        width: 100%;
+      }
+
+      ::v-deep .el-input__inner {
+        width: 100%;
+      }
+
+      .agent-phone-item {
+        ::v-deep .el-form-item__content {
+          flex: 1;
+          min-width: 0;
+        }
+
+        ::v-deep .el-input {
+          width: 100%;
+          max-width: 100%;
+        }
+      }
+    }
+
+    .cert-column-fields {
+      margin-bottom: 18px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid #dcdfe6;
+
+      .el-form-item {
+        margin-bottom: 16px;
+      }
+
+      .el-form-item:last-child {
+        margin-bottom: 0;
+      }
+
+      ::v-deep .el-input,
+      ::v-deep .el-select {
+        width: 100%;
+      }
+    }
+  }
 }
 
 .add-dispute {
