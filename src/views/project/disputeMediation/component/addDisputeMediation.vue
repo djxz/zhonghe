@@ -705,13 +705,13 @@
                 <div class="region-title">*委托人信息</div>
                 <div class="agent-fields-grid">
                   <el-row class="line-row agent-field-row">
-                    <el-col :span="12">
+                    <el-col :span="11">
                       <el-form-item label="代理人姓名" prop="agentName">
                         <el-input v-model="diaputeForm.agentName" placeholder="请输入代理人姓名" clearable maxlength="10"
                           show-word-limit />
                       </el-form-item>
                     </el-col>
-                    <el-col :span="12">
+                    <el-col :span="13">
                       <el-form-item label="联系方式" prop="agentPhone" class="agent-phone-item">
                         <el-input v-model="diaputeForm.agentPhone" placeholder="请输入联系方式" type="tel" maxlength="11"
                           show-word-limit clearable oninput="value=value.replace(/[^\d]/g,'')" />
@@ -2489,6 +2489,10 @@ export default {
         border-bottom: 1px solid #DCDFE6;
         padding-bottom: 18px;
         margin-bottom: 18px;
+
+        &.agent-field-row {
+          border-bottom: none;
+        }
 
         .el-form-item {
           margin-bottom: 0;
