@@ -985,6 +985,7 @@
 
 <script>
 import { addDisputeMediation, mediatorList, SSEGetFromData } from "@/api/project/disputeMediation";
+import { uploadOcr } from "@/api/ocr";
 import Treeselect from "@riophae/vue-treeselect";
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 import {
@@ -997,7 +998,6 @@ import {
 } from "@/views/constant/CommonConstant.js";
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
-import conf from '@/conf';
 import { getToken } from '@/utils/auth';
 
 /** 与左侧表单 el-input 的 maxlength 一致，OCR 映射时超长则截取 */
@@ -1472,15 +1472,8 @@ export default {
       files.forEach((f) => {
         fd.append("file", f, f.name);
       });
-      const url = (conf.server.ocrUploadUrl || "").trim();
-      if (!url || !/^https?:\/\//i.test(url)) {
-        this.$modal.closeLoading();
-        this.$modal.msgError("OCR 上传地址未配置或无效，请检查 conf.server.ocrUploadUrl");
-        options.forEach((opt) => opt.onError(new Error("Invalid ocrUploadUrl")));
-        return;
-      }
       const fileLabel = files.map((f) => f.name || "图片").join("、");
-      this.postFormData(url, fd, 120000)
+      uploadOcr(fd, 120000)
         .then((res) => {
           const body = res.data;
           const code = body && typeof body.code !== "undefined" ? body.code : null;

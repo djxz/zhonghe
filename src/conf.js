@@ -35,8 +35,8 @@ export default {
         /** 纠纷扩展服务（案件类型、满意度等），需全路径对接时可单独配置 */
         expandBaseUrl: _envS('$expandBaseUrl', 'http://192.168.2.85:6582/tj-mediation-server-expand'),
 
-        /** 图片 OCR 识别上传（新服务，须全路径调用） */
-        ocrUploadUrl: _envS('$ocrUploadUrl', 'http://192.168.2.2:35000/api/ocr/upload'),
+        /** OCR 识别服务基址（如 /ocr/upload 等接口均在此服务下） */
+        ocrBaseUrl: _envS('$ocrBaseUrl', 'http://192.168.2.2:35000/api'),
 
         // baseUrl: _envS('$baseUrl', 'http://data.zhi-shan.cn/tj-mediation-server'),
         publicPath: _envS('$publicPath', 'tj-mediation-manage'),
