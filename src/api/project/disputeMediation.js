@@ -1,10 +1,42 @@
 import request from '@/utils/request';
+import axios from 'axios';
 import conf from '@/conf';
+import { getToken } from '@/utils/auth';
 
 function expandServiceUrl(path) {
   const base = String(conf.server.expandBaseUrl || '').replace(/\/$/, '');
   const p = path.startsWith('/') ? path : `/${path}`;
   return `${base}${p}`;
+}
+
+function assertExpandBaseUrl() {
+  const base = String(conf.server.expandBaseUrl || '').trim();
+  if (!base || !/^https?:\/\//i.test(base)) {
+    throw new Error('扩展服务地址未配置或无效，请检查 conf.server.expandBaseUrl');
+  }
+}
+
+/** FormData 上传至 expand 服务（multipart，不使用全局 application/json） */
+export function expandFormDataPost(path, formData, timeout = 120000) {
+  assertExpandBaseUrl();
+  const url = expandServiceUrl(path);
+  const token = getToken();
+  const headers = token ? { Authorization: 'Bearer ' + token } : {};
+  return axios.post(url, formData, {
+    headers,
+    timeout,
+    transformRequest: [
+      (data, headerConfig) => {
+        delete headerConfig['Content-Type'];
+        return data;
+      },
+    ],
+  });
+}
+
+/** Excel 表格信息识别 */
+export function getExcelAnalysisInfo(formData, timeout = 120000) {
+  return expandFormDataPost('/project/excelAnalysis/getExcelAnalysisInfo', formData, timeout);
 }
 
 // 查询纠纷业务工单列表

@@ -36,7 +36,7 @@
                 </el-form-item>
               </el-col>
             </el-row>
-            <el-row>
+            <el-row v-if="form.entryChannel && form.entryChannel !== DM_ENTRY_CHANNEL.E">
               <el-col :span="24">
                 <el-form-item label="图片信息识别">
                   <el-upload
@@ -67,6 +67,41 @@
                       <span class="record-label">{{ record.label }}</span>
                       <span class="record-time">{{ record.time }}</span>
                       <el-button type="text" class="record-delete" @click.stop="removeOcrRecord(index)">删除</el-button>
+                    </li>
+                  </ul>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row v-if="form.entryChannel && form.entryChannel === DM_ENTRY_CHANNEL.D">
+              <el-col :span="24">
+                <el-form-item label="表格信息识别">
+                  <el-upload
+                    ref="excelUpload"
+                    action=""
+                    accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                    :show-file-list="false"
+                    :limit="1"
+                    :http-request="handleExcelUpload"
+                    :before-upload="beforeExcelUpload"
+                    :on-exceed="handleExcelExceed"
+                    :auto-upload="true"
+                  >
+                    <el-button size="mini" type="primary">上传Excel</el-button>
+                    <span slot="tip" class="el-upload__tip" style="margin-left: 12px">
+                      仅支持 Excel 文件，识别后自动填入左侧表单
+                    </span>
+                  </el-upload>
+                  <ul v-if="excelRecognizeRecords.length" class="recognize-records-list">
+                    <li
+                      v-for="(record, index) in excelRecognizeRecords"
+                      :key="record.id"
+                      class="recognize-record-item"
+                      :class="{ active: activeExcelRecordId === record.id }"
+                      @click="applyExcelRecord(record)"
+                    >
+                      <span class="record-label">{{ record.label }}</span>
+                      <span class="record-time">{{ record.time }}</span>
+                      <el-button type="text" class="record-delete" @click.stop="removeExcelRecord(index)">删除</el-button>
                     </li>
                   </ul>
                 </el-form-item>
@@ -984,7 +1019,7 @@
 </template>
 
 <script>
-import { addDisputeMediation, mediatorList, SSEGetFromData } from "@/api/project/disputeMediation";
+import { addDisputeMediation, mediatorList, SSEGetFromData, getExcelAnalysisInfo } from "@/api/project/disputeMediation";
 import { uploadOcr } from "@/api/ocr";
 import Treeselect from "@riophae/vue-treeselect";
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
@@ -1220,6 +1255,8 @@ export default {
       ocrBatchFiles: [],
       ocrBatchOptions: [],
       ocrBatchTimer: null,
+      excelRecognizeRecords: [],
+      activeExcelRecordId: null,
       asrRecognizeRecords: [],
       activeAsrRecordId: null,
     };
@@ -1258,6 +1295,8 @@ export default {
           this.sseList = [];
           this.ocrRecognizeRecords = [];
           this.activeOcrRecordId = null;
+          this.excelRecognizeRecords = [];
+          this.activeExcelRecordId = null;
           this.asrRecognizeRecords = [];
           this.activeAsrRecordId = null;
           this.diaputeForm = this.getDefaultDiaputeForm();
@@ -1279,6 +1318,8 @@ export default {
           this.diaputeForm = this.getDefaultDiaputeForm()
           this.ocrRecognizeRecords = []
           this.activeOcrRecordId = null
+          this.excelRecognizeRecords = []
+          this.activeExcelRecordId = null
           this.asrRecognizeRecords = []
           this.activeAsrRecordId = null
           this.run = false
@@ -1510,7 +1551,7 @@ export default {
           }
           const mapped = this.applyOcrDataToForm(body);
           const record = this.addOcrRecognizeRecord(data, fileLabel);
-          this.uploadOcrImagesToAttachment(files, record.id);
+          this.uploadRecognizeFilesToAttachment(files, record.id, this.ocrRecognizeRecords);
           this.$modal.closeLoading();
           options.forEach((opt) => opt.onSuccess(body, opt.file));
           if (this.$refs.ocrUpload) {
@@ -1532,21 +1573,21 @@ export default {
           options.forEach((opt) => opt.onError(err));
         });
     },
-    uploadOcrImagesToAttachment(files, recordId) {
+    uploadRecognizeFilesToAttachment(files, recordId, records) {
       const base = (this._baseUrl || "").trim();
-      if (!base || !/^https?:\/\//i.test(base) || !recordId) {
+      if (!base || !/^https?:\/\//i.test(base) || !recordId || !records) {
         return;
       }
       const uploadUrl = `${base.replace(/\/$/, "")}/common/upload`;
       files.forEach((file) => {
         const fd = new FormData();
-        const name = file.name || "image.png";
+        const name = file.name || "file";
         fd.append("file", file, name);
         this.postFormData(uploadUrl, fd, 60000)
           .then((res) => {
             const body = res.data;
             if (body && body.code === 200 && body.fileName) {
-              const record = this.ocrRecognizeRecords.find((r) => r.id === recordId);
+              const record = records.find((r) => r.id === recordId);
               if (!record) {
                 return;
               }
@@ -1556,6 +1597,14 @@ export default {
           })
           .catch(() => {});
       });
+    },
+    removeExcelRecognizeAttachments() {
+      const oldFiles = this.excelRecognizeRecords.flatMap(
+        (r) => (r.attachmentFiles && r.attachmentFiles.length ? r.attachmentFiles : [])
+      );
+      if (oldFiles.length) {
+        this.removeAttachmentFiles(oldFiles);
+      }
     },
     appendOcrRecordAttachment(record, fileName) {
       if (!record || !fileName) {
@@ -1616,6 +1665,133 @@ export default {
       if (removed && removed.id === this.activeOcrRecordId) {
         const last = this.ocrRecognizeRecords[this.ocrRecognizeRecords.length - 1];
         this.activeOcrRecordId = last ? last.id : null;
+      }
+    },
+    beforeExcelUpload(file) {
+      if (!this.form.entryChannel) {
+        this.$modal.msgError("请先选择进件渠道");
+        return false;
+      }
+      const name = (file.name || "").toLowerCase();
+      const isExcel =
+        /\.xlsx?$/i.test(name) ||
+        (file.type &&
+          (file.type.includes("spreadsheet") || file.type.includes("excel")));
+      if (!isExcel) {
+        this.$modal.msgError("请上传 Excel 文件（.xls 或 .xlsx）");
+        return false;
+      }
+      const maxMb = 20;
+      if (file.size / 1024 / 1024 >= maxMb) {
+        this.$modal.msgError(`Excel 文件大小不能超过 ${maxMb} MB`);
+        return false;
+      }
+      return true;
+    },
+    handleExcelExceed() {
+      this.$modal.msgError("仅支持上传一个 Excel 文件");
+    },
+    handleExcelUpload(option) {
+      const raw = this.resolveUploadRawFile(option);
+      if (!raw) {
+        this.$modal.msgError("无法读取 Excel 文件，请重新选择");
+        option.onError(new Error("invalid upload file"));
+        return;
+      }
+      const fd = new FormData();
+      fd.append("entryChannel", this.form.entryChannel);
+      fd.append("file", raw, raw.name);
+      const fileLabel = raw.name || "Excel";
+      this.$modal.loading("正在上传并识别 Excel，请稍候...");
+      getExcelAnalysisInfo(fd, 120000)
+        .then((res) => {
+          const body = res.data;
+          const code = body && typeof body.code !== "undefined" ? body.code : null;
+          if (res.status < 200 || res.status >= 300) {
+            const msg = (body && body.msg) || `上传失败 (${res.status})`;
+            this.$modal.closeLoading();
+            this.$modal.msgError(msg);
+            option.onError(new Error(msg));
+            return;
+          }
+          if (body.status != null && body.status !== "success") {
+            const msg = (body && body.msg) || "识别失败";
+            this.$modal.closeLoading();
+            this.$modal.msgError(msg);
+            option.onError(new Error(msg));
+            return;
+          }
+          if (code !== null && code !== 200) {
+            const msg = (body && body.msg) || "识别失败";
+            this.$modal.closeLoading();
+            this.$modal.msgError(msg);
+            option.onError(new Error(msg));
+            return;
+          }
+          const data = body.data;
+          if (!data || typeof data !== "object" || Array.isArray(data)) {
+            const msg =
+              (body && body.msg) ||
+              "识别结果中缺少 data 表单字段对象（需与接口约定字段名一致）";
+            this.$modal.closeLoading();
+            this.$modal.msgError(msg);
+            option.onError(new Error(msg));
+            return;
+          }
+          const mapped = this.applyOcrDataToForm(body);
+          this.removeExcelRecognizeAttachments();
+          const record = this.addExcelRecognizeRecord(data, fileLabel);
+          this.uploadRecognizeFilesToAttachment([raw], record.id, this.excelRecognizeRecords);
+          this.$modal.closeLoading();
+          option.onSuccess(body, option.file);
+          if (this.$refs.excelUpload) {
+            this.$refs.excelUpload.clearFiles();
+          }
+          this.$modal.msgSuccess(
+            mapped > 0
+              ? "Excel 识别完成，已根据识别结果填入左侧表单"
+              : "Excel 识别完成，未识别到可自动填入的文本项（或均为「无」）"
+          );
+        })
+        .catch((err) => {
+          this.$modal.closeLoading();
+          const msg =
+            (err.response && err.response.data && err.response.data.msg) ||
+            err.message ||
+            "上传失败";
+          this.$modal.msgError(msg);
+          option.onError(err);
+        });
+    },
+    addExcelRecognizeRecord(data, label) {
+      const record = {
+        id: uuidv4(),
+        label: label || "Excel 识别记录",
+        time: this.formatRecordTime(),
+        data: JSON.parse(JSON.stringify(data)),
+        attachmentFiles: [],
+      };
+      this.excelRecognizeRecords = [record];
+      this.activeExcelRecordId = record.id;
+      return record;
+    },
+    applyExcelRecord(record) {
+      if (!record || !record.data) {
+        return;
+      }
+      this.activeExcelRecordId = record.id;
+      this.applyOcrDataToForm({ data: record.data });
+    },
+    removeExcelRecord(index) {
+      const removed = this.excelRecognizeRecords.splice(index, 1)[0];
+      if (removed && removed.attachmentFiles && removed.attachmentFiles.length) {
+        this.removeAttachmentFiles(removed.attachmentFiles);
+      }
+      if (removed && removed.id === this.activeExcelRecordId) {
+        this.activeExcelRecordId = null;
+      }
+      if (this.$refs.excelUpload) {
+        this.$refs.excelUpload.clearFiles();
       }
     },
     getTodayDateStr() {
@@ -1935,12 +2111,17 @@ export default {
       this.resetForm("form");
       this.ocrRecognizeRecords = [];
       this.activeOcrRecordId = null;
+      this.excelRecognizeRecords = [];
+      this.activeExcelRecordId = null;
       this.asrRecognizeRecords = [];
       this.activeAsrRecordId = null;
       this.diaputeForm = this.getDefaultDiaputeForm();
       this.$nextTick(() => {
         if (this.$refs.ocrUpload) {
           this.$refs.ocrUpload.clearFiles();
+        }
+        if (this.$refs.excelUpload) {
+          this.$refs.excelUpload.clearFiles();
         }
       });
       if (
@@ -2151,6 +2332,24 @@ export default {
     changEntryChannel() {
       if (!DM_ENTRY_CHANNEL.COURT.includes(this.form.entryChannel)) {
         this.form.mediatorUserId = null;
+      }
+      if (
+        !this.form.entryChannel ||
+        this.form.entryChannel === DM_ENTRY_CHANNEL.E
+      ) {
+        this.ocrRecognizeRecords = [];
+        this.activeOcrRecordId = null;
+        if (this.$refs.ocrUpload) {
+          this.$refs.ocrUpload.clearFiles();
+        }
+      }
+      if (!this.form.entryChannel || this.form.entryChannel !== DM_ENTRY_CHANNEL.D) {
+        this.removeExcelRecognizeAttachments();
+        this.excelRecognizeRecords = [];
+        this.activeExcelRecordId = null;
+        if (this.$refs.excelUpload) {
+          this.$refs.excelUpload.clearFiles();
+        }
       }
     },
     calculateRightBHeight() {
