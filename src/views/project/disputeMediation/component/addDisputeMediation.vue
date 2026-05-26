@@ -1335,38 +1335,78 @@ export default {
     disabledDate(time) {
       return time.getTime() < Date.now();
     },
+    /** 18 位居民身份证解析性别、年龄（与手动输入证件号规则一致） */
+    parseIdCardSexAndAge(certType, certNum) {
+      if (certType !== CERT_TYPE.CERT_TYPE0 || certNum == null || certNum === "") {
+        return null;
+      }
+      const val = String(certNum).trim().toUpperCase();
+      const regex =
+        /^[1-9]\d{5}(18|19|20)?\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}(\d|X)$/;
+      if (!regex.test(val) || val.length < 18) {
+        return null;
+      }
+      const sex = val.charAt(16) % 2 === 0 ? SYS_SEX.man : SYS_SEX.woman;
+      const birthDateStr = val.substring(6, 14);
+      const birthYear = parseInt(birthDateStr.substring(0, 4), 10);
+      const birthMonth = parseInt(birthDateStr.substring(4, 6), 10) - 1;
+      const birthDay = parseInt(birthDateStr.substring(6, 8), 10);
+      const currentDate = new Date();
+      let age = currentDate.getFullYear() - birthYear;
+      if (
+        currentDate.getMonth() < birthMonth ||
+        (currentDate.getMonth() === birthMonth && currentDate.getDate() < birthDay)
+      ) {
+        age -= 1;
+      }
+      if (!Number.isFinite(age) || age < 0) {
+        return { sex };
+      }
+      return { sex, age };
+    },
+    /** Excel 回填后，按证件类型+证件号推导性别、年龄 */
+    applyIdCardDerivedFieldsAfterExcel() {
+      const consumer = this.parseIdCardSexAndAge(
+        this.form.certType,
+        this.form.certNum
+      );
+      if (consumer) {
+        if (consumer.sex != null) {
+          this.$set(this.form, "sex", consumer.sex);
+        }
+        if (consumer.age != null) {
+          this.$set(this.form, "age", String(consumer.age));
+        }
+      }
+      const agent = this.parseIdCardSexAndAge(
+        this.form.agentCertType,
+        this.form.agentCertNum
+      );
+      if (agent && agent.sex != null) {
+        this.$set(this.form, "agentSex", agent.sex);
+      }
+      const deptContact = this.parseIdCardSexAndAge(
+        this.form.deptContactCertType,
+        this.form.deptContactCertNum
+      );
+      if (deptContact && deptContact.sex != null) {
+        this.$set(this.form, "deptContactSex", deptContact.sex);
+      }
+    },
     // 根据身份证号自动填充年龄性别
     cardNumChange(val) {
-      if (this.form.certType === CERT_TYPE.CERT_TYPE0) {
-        let hasError = false;
-        this.$refs["form"].validateField(["certNum"], (err) => {
-          if (err) {
-            hasError = true;
-            return;
-          }
-        });
-        if (!hasError) {
-          if (val.charAt(16) % 2 === 0) {
-            this.form.sex = SYS_SEX.man;
-          } else {
-            this.form.sex = SYS_SEX.woman;
-          }
-          let birthDateStr = val.substring(6, 14);
-          let birthYear = parseInt(birthDateStr.substring(0, 4), 10);
-          let birthMonth = parseInt(birthDateStr.substring(4, 6), 10) - 1;
-          let birthDay = parseInt(birthDateStr.substring(6, 8), 10);
-          let birthDate = new Date(birthYear, birthMonth, birthDay);
-          let currentDate = new Date();
-          let age = currentDate.getFullYear() - birthYear;
-          if (
-            currentDate.getMonth() < birthMonth ||
-            (currentDate.getMonth() === birthMonth &&
-              currentDate.getDate() < birthDay)
-          ) {
-            age -= 1;
-          }
-          this.form.age = age;
-        }
+      if (this.form.certType !== CERT_TYPE.CERT_TYPE0) {
+        return;
+      }
+      const parsed = this.parseIdCardSexAndAge(this.form.certType, val);
+      if (!parsed) {
+        return;
+      }
+      if (parsed.sex != null) {
+        this.form.sex = parsed.sex;
+      }
+      if (parsed.age != null) {
+        this.form.age = parsed.age;
       }
     },
     /** 校验数字并且小数点后两位 */
@@ -1638,6 +1678,19 @@ export default {
         .filter((f) => f && !removeSet.has(f));
       this.form.attachment = remaining.length ? remaining.join(",") : null;
     },
+    /** 仅高亮当前实际回填表单的那条识别记录（图片与 Excel 互斥） */
+    setActiveRecognizeRecord(type, recordId) {
+      if (type === "ocr") {
+        this.activeOcrRecordId = recordId;
+        this.activeExcelRecordId = null;
+      } else if (type === "excel") {
+        this.activeExcelRecordId = recordId;
+        this.activeOcrRecordId = null;
+      } else {
+        this.activeOcrRecordId = null;
+        this.activeExcelRecordId = null;
+      }
+    },
     addOcrRecognizeRecord(data, label) {
       const record = {
         id: uuidv4(),
@@ -1647,14 +1700,14 @@ export default {
         attachmentFiles: [],
       };
       this.ocrRecognizeRecords.push(record);
-      this.activeOcrRecordId = record.id;
+      this.setActiveRecognizeRecord("ocr", record.id);
       return record;
     },
     applyOcrRecord(record) {
       if (!record || !record.data) {
         return;
       }
-      this.activeOcrRecordId = record.id;
+      this.setActiveRecognizeRecord("ocr", record.id);
       this.applyOcrDataToForm({ data: record.data });
     },
     removeOcrRecord(index) {
@@ -1664,7 +1717,7 @@ export default {
       }
       if (removed && removed.id === this.activeOcrRecordId) {
         const last = this.ocrRecognizeRecords[this.ocrRecognizeRecords.length - 1];
-        this.activeOcrRecordId = last ? last.id : null;
+        this.setActiveRecognizeRecord(last ? "ocr" : null, last ? last.id : null);
       }
     },
     beforeExcelUpload(file) {
@@ -1738,7 +1791,7 @@ export default {
             option.onError(new Error(msg));
             return;
           }
-          const mapped = this.applyOcrDataToForm(body);
+          const mapped = this.applyExcelDataToForm(body);
           this.removeExcelRecognizeAttachments();
           const record = this.addExcelRecognizeRecord(data, fileLabel);
           this.uploadRecognizeFilesToAttachment([raw], record.id, this.excelRecognizeRecords);
@@ -1772,15 +1825,15 @@ export default {
         attachmentFiles: [],
       };
       this.excelRecognizeRecords = [record];
-      this.activeExcelRecordId = record.id;
+      this.setActiveRecognizeRecord("excel", record.id);
       return record;
     },
     applyExcelRecord(record) {
       if (!record || !record.data) {
         return;
       }
-      this.activeExcelRecordId = record.id;
-      this.applyOcrDataToForm({ data: record.data });
+      this.setActiveRecognizeRecord("excel", record.id);
+      this.applyExcelDataToForm({ data: record.data });
     },
     removeExcelRecord(index) {
       const removed = this.excelRecognizeRecords.splice(index, 1)[0];
@@ -1788,7 +1841,7 @@ export default {
         this.removeAttachmentFiles(removed.attachmentFiles);
       }
       if (removed && removed.id === this.activeExcelRecordId) {
-        this.activeExcelRecordId = null;
+        this.setActiveRecognizeRecord(null);
       }
       if (this.$refs.excelUpload) {
         this.$refs.excelUpload.clearFiles();
@@ -2024,6 +2077,130 @@ export default {
         count += 1;
       });
       return count;
+    },
+    /** Excel 识别：回填左侧表单全部可映射字段（含 Select、证件号等）；OCR 仍仅用 applyOcrDataToForm */
+    applyExcelDataToForm(body) {
+      if (!body || typeof body !== "object") {
+        return -1;
+      }
+      const data = body.data;
+      if (!data || typeof data !== "object" || Array.isArray(data)) {
+        return -1;
+      }
+      if (Object.keys(data).length === 0) {
+        return -1;
+      }
+      const skipKeys = new Set([
+        "workOrderId",
+        "manageDeptId",
+        "attachment",
+        "applicationAttachment",
+        "stampedFeedbackAttachment",
+        "photocopyAttachment",
+        "mediatorUserId",
+        "assistantUserId",
+        "status",
+        "createId",
+        "createTime",
+        "updateId",
+        "updateTime",
+      ]);
+      const numericInputKeys = new Set([
+        "age",
+        "involveAmount",
+        "appealAmount",
+        "solutionAmount",
+        "cashValue",
+        "lossAssessmentAmount",
+        "claimAmount",
+      ]);
+      const contactPhoneKeys = new Set([
+        "phone",
+        "agentPhone",
+        "deptHandlerPhone",
+        "deptContactPhone",
+      ]);
+      const cascaderKeys = new Set([
+        "entryChannel",
+        "deptType",
+        "businessType1",
+        "insuranceType1",
+      ]);
+      let count = 0;
+      let deptIdChanged = false;
+      Object.keys(data).forEach((key) => {
+        if (skipKeys.has(key)) {
+          return;
+        }
+        const raw = data[key];
+        if (this.isOcrFieldNoneValue(raw)) {
+          return;
+        }
+        const val = this.normalizeExcelFormValue(
+          key,
+          raw,
+          numericInputKeys,
+          contactPhoneKeys,
+          cascaderKeys
+        );
+        if (val === undefined) {
+          return;
+        }
+        this.$set(this.form, key, val);
+        if (key === "deptId") {
+          deptIdChanged = true;
+        }
+        count += 1;
+      });
+      if (deptIdChanged) {
+        this.$nextTick(() => this.deptChange());
+      }
+      this.applyIdCardDerivedFieldsAfterExcel();
+      return count;
+    },
+    normalizeExcelFormValue(key, raw, numericInputKeys, contactPhoneKeys, cascaderKeys) {
+      if (Array.isArray(raw)) {
+        return raw.length ? raw : null;
+      }
+      if (typeof raw === "boolean") {
+        return raw;
+      }
+      if (key === "deptId" && typeof raw === "number" && Number.isFinite(raw)) {
+        return raw;
+      }
+      if (typeof raw === "number" && Number.isFinite(raw)) {
+        if (cascaderKeys.has(key)) {
+          return String(raw);
+        }
+        raw = String(raw);
+      } else if (typeof raw !== "string") {
+        return undefined;
+      } else {
+        raw = raw.trim();
+        if (!raw) {
+          return null;
+        }
+      }
+      let strVal = typeof raw === "string" ? raw : String(raw);
+      if (numericInputKeys.has(key)) {
+        const normalized = this.normalizeOcrNumberInputValue(key, strVal);
+        if (normalized == null || normalized === "") {
+          return undefined;
+        }
+        return normalized;
+      }
+      if (contactPhoneKeys.has(key)) {
+        const normalized = this.normalizeOcrPhoneInputValue(strVal);
+        if (normalized == null || normalized === "") {
+          return undefined;
+        }
+        return normalized;
+      }
+      const cap = OCR_FIELD_MAXLENGTH[key];
+      if (typeof cap === "number" && cap > 0 && strVal.length > cap) {
+        strVal = strVal.slice(0, cap);
+      }
+      return strVal;
     },
     // 表单重置
     reset() {
