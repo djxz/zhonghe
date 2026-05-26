@@ -1,6 +1,6 @@
 <!-- 导入对话框 -->
 <template xmlns="http://www.w3.org/1999/html">
-  <el-dialog :title="title" :visible.sync="visible" width="400px" append-to-body>
+  <el-dialog :title="dialogTitle" :visible.sync="visible" width="400px" append-to-body>
 <!--    <el-form ref="form" :model="form" :rules="rules" label-width="80px">-->
 <!--      <el-form-item label="行业" prop="industry">-->
 <!--        <el-select v-model="form.industry" placeholder="请选择行业" clearable>-->
@@ -18,7 +18,7 @@
       :limit="1"
       accept=".xlsx, .xls"
       :headers="upload.headers"
-      :action="upload.url + '?updateSupport=' + upload.updateSupport"
+      :action="uploadAction"
       :disabled="upload.isUploading"
       :on-progress="handleFileUploadProgress"
       :on-success="handleFileSuccess"
@@ -34,7 +34,7 @@
         <!--            <el-checkbox v-model="upload.updateSupport" /> 是否更新已经存在的数据-->
         <!--          </div>-->
         <span>仅允许导入xls、xlsx格式文件。</span>
-        <div>
+        <div v-if="showTemplateLinks">
           <div style="display: inline-block; margin-right: 10px">
             <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importTemplate('bank')">银行模板</el-link>
           </div>
@@ -54,11 +54,29 @@
 <script>
 
 import {getToken} from "@/utils/auth";
+import conf from "@/conf";
 
 export default {
+  props: {
+    dialogTitle: {
+      type: String,
+      default: "消保平台转办导入",
+    },
+    uploadPath: {
+      type: String,
+      default: "/project/disputeMediation/import",
+    },
+    useExpandBaseUrl: {
+      type: Boolean,
+      default: false,
+    },
+    showTemplateLinks: {
+      type: Boolean,
+      default: true,
+    },
+  },
   data() {
     return {
-      title: "消保平台转办导入",
       visible: false,
       // 导入参数
       upload: {
@@ -68,10 +86,16 @@ export default {
         updateSupport: 0,
         // 设置上传的请求头部
         headers: {Authorization: "Bearer " + getToken()},
-        // 上传的地址
-        url: this._baseUrl + "/project/disputeMediation/import"
       },
     }
+  },
+  computed: {
+    uploadAction() {
+      const base = this.useExpandBaseUrl
+        ? String(conf.server.expandBaseUrl || "").replace(/\/$/, "")
+        : this._baseUrl;
+      return `${base}${this.uploadPath}?updateSupport=${this.upload.updateSupport}`;
+    },
   },
   watch: {
   },

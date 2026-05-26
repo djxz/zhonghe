@@ -1980,6 +1980,25 @@ export default {
       if (Object.keys(data).length === 0) {
         return -1;
       }
+      // 系统字段，不参与 OCR 回填
+      const systemSkipKeys = new Set([
+        "workOrderId",
+        "manageDeptId",
+        "attachment",
+        "applicationAttachment",
+        "stampedFeedbackAttachment",
+        "photocopyAttachment",
+        "mediatorUserId",
+        "assistantUserId",
+        "status",
+        "createId",
+        "createTime",
+        "updateId",
+        "updateTime",
+        "entryChannel", // 用户手动选择，OCR 不覆盖
+        "deptType",     // 由 deptId 变化自动联动，OCR 不覆盖
+        "deptId",       // 树形选择，OCR 不覆盖
+      ]);
       const numericInputKeys = new Set([
         "age",
         "involveAmount",
@@ -1995,59 +2014,84 @@ export default {
         "deptHandlerPhone",
         "deptContactPhone",
       ]);
-      const skipKeys = new Set([
-        "certNum",
-        "agentCertNum",
-        "deptContactCertNum",
-        "deptHandlerCertNum",
-        "salesmanCertNum",
-      ]);
-      const textFieldKeys = new Set([
-        "agentName",
-        "agentPhone",
-        "name",
-        "phone",
-        "age",
-        "nation",
-        "profession",
-        "address",
-        "deptAddress",
-        "deptArea",
-        "deptHandlerName",
-        "deptHandlerPhone",
-        "level",
-        "businessType2",
-        "businessType3",
-        "insuranceType2",
-        "complaintContent",
-        "appeal",
-        "deptContact",
-        "deptContactPosition",
-        "deptContactPhone",
-        "product",
-        "contract",
-        "involveAmount",
-        "appealAmount",
-        "solutionAmount",
-        "solution",
-        "policyholder",
-        "insured",
-        "cashValue",
-        "lossAssessmentAmount",
-        "claimAmount",
-        "businessCompany",
-        "salesman",
-        "salesmanJobNum",
-      ]);
+      // Select / Radio 枚举字段：字段名 → 字典类型名
+      const enumFieldDictMap = {
+        isSelf: "sys_yes_no",
+        agentCertType: "cert_type",
+        agentSex: "sys_user_sex",
+        certType: "cert_type",
+        sex: "sys_user_sex",
+        isRepeatedly: "sys_yes_no",
+        isBlackIndustry: "sys_yes_no",
+        isThirdPartyAgent: "sys_yes_no",
+        isHighRisk: "sys_yes_no",
+        handleChannel: "dm_handle_channel",
+        bankComplaintType: "dm_bank_complaint_type",
+        saleChannel: "dm_sale_channel",
+        insuranceComplaintType: "dm_insurance_complaint_type",
+        consumerAcceptMediate: "sys_yes_no",
+        needCheck: "sys_yes_no",
+        enforceAgreementType: "dm_enforce_agreement_type",
+        acceptStatus: "dm_accept_status",
+        rejectReason: "dm_reject_reason",
+        deptContactSex: "sys_user_sex",
+        deptContactCertType: "cert_type",
+      };
+      // Cascader 枚举字段：字段名 → 字典 options2 路径
+      const cascaderFieldDictMap = {
+        businessType1: "dm_business_type",
+        insuranceType1: "dm_insurance_type",
+      };
       let count = 0;
       Object.keys(data).forEach((key) => {
-        if (!textFieldKeys.has(key) || skipKeys.has(key)) {
+        if (systemSkipKeys.has(key)) {
           return;
         }
         const raw = data[key];
         if (this.isOcrFieldNoneValue(raw)) {
           return;
         }
+        // --- Select / Radio 枚举字段：根据 label 或 value 匹配枚举项 ---
+        if (enumFieldDictMap[key]) {
+          const dictName = enumFieldDictMap[key];
+          const dictItems =
+            this.dict && this.dict.type && this.dict.type[dictName];
+          if (!dictItems || !dictItems.length) {
+            return;
+          }
+          const rawStr =
+            typeof raw === "string" ? raw.trim() : String(raw).trim();
+          const matched =
+            dictItems.find((d) => String(d.value) === rawStr) ||
+            dictItems.find((d) => d.label === rawStr);
+          if (!matched) {
+            return;
+          }
+          this.$set(this.form, key, matched.value);
+          count += 1;
+          return;
+        }
+        // --- Cascader 枚举字段：遍历 options2 树匹配 ---
+        if (cascaderFieldDictMap[key]) {
+          const dictName = cascaderFieldDictMap[key];
+          const dictObj =
+            this.dict && this.dict.type && this.dict.type[dictName];
+          const options =
+            dictObj && (dictObj.options2 || dictObj.options);
+          if (!options || !options.length) {
+            return;
+          }
+          const rawStr =
+            typeof raw === "string" ? raw.trim() : String(raw).trim();
+          const matchedVal = this.findCascaderValue(options, rawStr);
+          if (matchedVal === undefined) {
+            return;
+          }
+          this.$set(this.form, key, matchedVal);
+          count += 1;
+          return;
+        }
+        // --- 文本 / 数字 / 电话 / 证件号码 等普通输入字段 ---
         let strVal;
         if (typeof raw === "string") {
           strVal = raw;
@@ -2077,6 +2121,27 @@ export default {
         count += 1;
       });
       return count;
+    },
+    /**
+     * 递归遍历 Cascader options 树，按 value 或 label 匹配；
+     * 返回匹配到的 value，未匹配时返回 undefined
+     */
+    findCascaderValue(options, rawStr) {
+      if (!options || !rawStr) {
+        return undefined;
+      }
+      for (const opt of options) {
+        if (String(opt.value) === rawStr || opt.label === rawStr) {
+          return opt.value;
+        }
+        if (opt.children && opt.children.length) {
+          const found = this.findCascaderValue(opt.children, rawStr);
+          if (found !== undefined) {
+            return found;
+          }
+        }
+      }
+      return undefined;
     },
     /** Excel 识别：回填左侧表单全部可映射字段（含 Select、证件号等）；OCR 仍仅用 applyOcrDataToForm */
     applyExcelDataToForm(body) {
@@ -2550,6 +2615,7 @@ export default {
       const nowFormId = this.formId;
       if (typeof (EventSource) !== "undefined" && this.run === false) {
         const source = new EventSource(`/asr/stream/?code=${this.extn}`);
+        // const source = new EventSource(`http://192.168.50.18:8080/api/v1/asr/stream/?code=139`);
         source.onmessage = (event) => {
           try {
             const resData = JSON.parse(event.data);

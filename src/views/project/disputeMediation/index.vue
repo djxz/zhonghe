@@ -275,6 +275,16 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
+          type="info"
+          plain
+          icon="el-icon-upload2"
+          size="mini"
+          @click="$refs.importByHDRef.open()"
+          v-hasPermi="['project:disputeMediation:importByHD']"
+        >河东法院导入</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
           type="warning"
           plain
           icon="el-icon-download"
@@ -717,6 +727,15 @@
 
     <!-- 导入组件 -->
     <Import ref="importRef" @callback="getList"/>
+
+    <!-- 河东法院导入 -->
+    <Import
+      ref="importByHDRef"
+      dialog-title="河东法院导入"
+      upload-path="/project/disputeMediation/importByHD"
+      :show-template-links="false"
+      @callback="getList"
+    />
 
     <!-- 导出组件 -->
     <Export ref="exportRef"/>

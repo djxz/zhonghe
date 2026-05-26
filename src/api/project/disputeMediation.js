@@ -651,6 +651,7 @@ export function SSEGetFromData(data) {
     data: data,
     timeout: 180000,
     baseURL: ''
+    // baseURL: 'http://192.168.50.18:8080/api/v1/'
   });
 }
 
