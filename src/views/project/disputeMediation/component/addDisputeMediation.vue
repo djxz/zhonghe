@@ -1,9 +1,9 @@
 <!-- 新增纠纷业务工单对话框 -->
 <template xmlns="http://www.w3.org/1999/html">
-  <el-dialog :visible.sync="visible" width="85%" append-to-body :close-on-click-modal="false" :show-close="false"
+  <el-dialog ref="disputeDialog" :visible.sync="visible" width="85%" append-to-body :close-on-click-modal="false" :show-close="false"
     class="dispute-dialog" :close-on-press-escape="false">
     <el-row class="add-dispute" :gutter="3">
-      <el-col class="dialog-left" :span="14">
+      <el-col ref="dialogLeft" class="dialog-left" :span="14">
         <div class="dialog-title">
           <span>添加纠纷业务工单</span>
           <i class="el-icon-close" @click="cancel" />
@@ -723,8 +723,8 @@
         </div>
       </el-col>
       <el-col class="dialog-right" :span="10">
-        <div class="right-t">
-          <el-form ref="form" :model="diaputeForm" label-width="120px" hide-required-asterisk>
+        <div ref="rightT" class="right-t">
+          <el-form ref="diaputeFormRef" :model="diaputeForm" label-width="120px" hide-required-asterisk>
             <div class="consumer-info-wrap">
               <el-row class="is-self-row">
                 <el-col :span="24">
@@ -991,7 +991,7 @@
             <el-button @click="handelCoverForm">确认信息，自动覆盖</el-button>
           </div>
         </div>
-        <div class="right-b">
+        <div ref="rightB" class="right-b">
           <div v-for="(item, index) in sseList" :key="index" class="socket-item">
             <div class="socket-l" v-if="item.role === '调解员'">
               <div class="person-info">
@@ -1890,7 +1890,11 @@ export default {
       };
       this.asrRecognizeRecords.push(record);
       this.activeAsrRecordId = record.id;
-      this.$nextTick(() => this.calculateRightBHeight());
+      this.stopAsrDataInterval();
+      this.$nextTick(() => {
+        this.calculateRightBHeight();
+        this.releaseDialogPopupLock();
+      });
     },
     applyAsrRecord(record) {
       if (!record || !record.data) {
@@ -2595,17 +2599,57 @@ export default {
       }
     },
     calculateRightBHeight() {
-      const dialogLeft = document.querySelector('.dialog-left');
-      const rightT = document.querySelector('.right-t');
-      const rightB = document.querySelector('.right-b');
+      const dialogLeftEl = this.$refs.dialogLeft && this.$refs.dialogLeft.$el;
+      const rightT = this.$refs.rightT;
+      const rightB = this.$refs.rightB;
 
-      if (dialogLeft && rightT && rightB) {
-        const dialogLeftHeight = dialogLeft.clientHeight || dialogLeft.offsetHeight;
-        const rightTHeight = rightT.clientHeight || rightT.offsetHeight;
-
-        rightB.style.height = (dialogLeftHeight - rightTHeight) + 'px';
-        console.log('计算高度:', dialogLeftHeight, rightTHeight, dialogLeftHeight - rightTHeight);
+      if (!dialogLeftEl || !rightT || !rightB) {
+        return;
       }
+      const dialogLeftHeight = dialogLeftEl.clientHeight || dialogLeftEl.offsetHeight;
+      const rightTHeight = rightT.clientHeight || rightT.offsetHeight;
+      const height = Math.max(0, dialogLeftHeight - rightTHeight);
+      rightB.style.height = height + 'px';
+    },
+    /** 语音解析轮询结束后清理，避免重复请求覆盖用户编辑 */
+    stopAsrDataInterval() {
+      if (this.getDataInterval) {
+        clearInterval(this.getDataInterval);
+        this.getDataInterval = null;
+      }
+    },
+    /** 批量回填右侧表单后，释放 Element UI 可能残留的透明遮罩 */
+    releaseDialogPopupLock() {
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
+      this.$nextTick(() => {
+        const dialogWrapper = this.$refs.disputeDialog && this.$refs.disputeDialog.$el
+          ? this.$refs.disputeDialog.$el.parentNode
+          : null;
+        if (!dialogWrapper || !dialogWrapper.classList.contains('el-dialog__wrapper')) {
+          return;
+        }
+        const dialogZIndex = parseInt(window.getComputedStyle(dialogWrapper).zIndex, 10) || 2000;
+        const hasOpenPopper = Array.from(
+          document.querySelectorAll('.el-select-dropdown, .el-picker-panel, .el-cascader-menus, .el-popover')
+        ).some((el) => {
+          const style = window.getComputedStyle(el);
+          return style.display !== 'none' && style.visibility !== 'hidden';
+        });
+        if (hasOpenPopper) {
+          return;
+        }
+        Array.from(document.body.children).forEach((el) => {
+          if (!el.classList || !el.classList.contains('v-modal')) {
+            return;
+          }
+          const z = parseInt(window.getComputedStyle(el).zIndex, 10) || 0;
+          if (z > dialogZIndex) {
+            el.parentNode.removeChild(el);
+          }
+        });
+      });
     },
     completedCount() {
       // 统计已完整的消息条数（兼容字符串/布尔两种 complete 表达）
@@ -2666,12 +2710,12 @@ export default {
           if (!this.getDataInterval && this.run === false) {
             this.getDataInterval = setInterval(() => {
               if (this.completedCount() >= 2) {
-                this.run = true
+                this.run = true;
                 SSEGetFromData({ content: this.sseList.filter(d => d.complete), type: 2 }).then(res => {
                   if (res.code === 200 && nowFormId === this.formId) {
-                    this.applyAsrParseResult(res.data)
+                    this.applyAsrParseResult(res.data);
                   }
-                })
+                });
               }
             }, 60000);
           }
