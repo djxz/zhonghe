@@ -146,7 +146,7 @@
 </template>
 
 <script>
-import { addInvestigationRecord, SSEGetFromData } from '@/api/project/disputeMediation';
+import { addInvestigationRecord, SSEGetFromData, saveCallQualityWorkOrder, updateCallQualityWorkOrder } from '@/api/project/disputeMediation';
 import { parseTime } from '@/utils/ruoyi';
 import recordForm from './formInfo.vue';
 import { DEPT_TYPE, SYS_YES_NO } from "@/views/constant/CommonConstant";
@@ -181,6 +181,8 @@ export default {
       sseList: [],
       formId: null,
       minisize: false,
+      callQualityWorkOrderId: null,
+      callAnsweredFlag: false,
     };
   },
   watch: {
@@ -212,11 +214,32 @@ export default {
             this.run = false
             console.log('SSE 连接已关闭');
           }
+          this.callQualityWorkOrderId = null;
+          this.callAnsweredFlag = false;
         }
       }
       if (nVal) {
         this.$nextTick(() => this.$refs.investigationRecordForm.refreshTime())
       }
+    },
+    '$store.state.settings.callInfo': {
+      handler(newVal) {
+        if (!this.dialogVisible) return;
+        const data = (newVal && newVal.data) || {};
+        const callStatus = (newVal && newVal.callStatus) || '';
+        const isAnswered = callStatus === 'busy' && (
+          (data.call_direction === 'outbound' && data.private_data === 'answered' && data.other_answered === true) ||
+          (data.call_direction === 'inbound' && data.private_data === 'answered')
+        );
+        if (isAnswered && !this.callAnsweredFlag) {
+          this.callAnsweredFlag = true;
+          this.onCallStart();
+        }
+        if (callStatus === 'acw' && this.callQualityWorkOrderId !== null) {
+          this.onCallEnd();
+        }
+      },
+      deep: true,
     },
   },
   created() {
@@ -232,6 +255,8 @@ export default {
         this.formData.workOrderId = row.workOrderId;
         this.formData.assistantName = row.assistantName;
         this.formData.mediatorName = row.mediatorName;
+        this.callQualityWorkOrderId = null;
+        this.callAnsweredFlag = false;
       }
       this.dialogVisible = true;
     },
@@ -379,7 +404,37 @@ export default {
     },
     handelCoverForm() {
       this.$refs.investigationRecordForm.setFormInfo({ ...this.diaputeForm });
-    }
+    },
+    async onCallStart() {
+      try {
+        const res = await saveCallQualityWorkOrder({
+          workOrderId: this.row.workOrderId,
+          entryChannel: this.row.entryChannel,
+          consumerName: this.row.name,
+          mediatorUserName: this.$store.getters.userInfo.nickName,
+          mediatorUserId: this.row.mediatorUserId,
+          consumerPhone: this.row.phone,
+        });
+        if (res && res.code === 200) {
+          this.callQualityWorkOrderId = res.data;
+        }
+      } catch (e) {
+        console.error('保存通话质检工单失败:', e);
+      }
+    },
+    async onCallEnd() {
+      const id = this.callQualityWorkOrderId;
+      this.callQualityWorkOrderId = null;
+      this.callAnsweredFlag = false;
+      try {
+        await updateCallQualityWorkOrder({
+          id,
+          mediatorUserId: this.row.mediatorUserId,
+        });
+      } catch (e) {
+        console.error('更新通话质检工单失败:', e);
+      }
+    },
   }
 };
 </script>

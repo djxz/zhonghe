@@ -42,6 +42,9 @@
             <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importTemplate('insurance')">保险模板</el-link>
           </div>
         </div>
+        <div v-if="showHdTemplateLink">
+          <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importHdTemplate">河东法院录入模版</el-link>
+        </div>
       </div>
     </el-upload>
     <div slot="footer" class="dialog-footer">
@@ -73,6 +76,10 @@ export default {
     showTemplateLinks: {
       type: Boolean,
       default: true,
+    },
+    showHdTemplateLink: {
+      type: Boolean,
+      default: false,
     },
   },
   data() {
@@ -129,6 +136,9 @@ export default {
       } else if (type === "insurance") {
         this.download('/project/disputeMediation/importTemplate?type=insurance', {}, `保险模板.xlsx`);
       }
+    },
+    importHdTemplate() {
+      this.download('/project/disputeMediation/importTemplateByHD', { type: 'HD' }, '河东法院录入模版.xlsx');
     },
     beforeUpload(file) {
       // 判断是否已经选择文件

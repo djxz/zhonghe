@@ -643,6 +643,24 @@ export function cancelMediatorReminder(data) {
   });
 }
 
+// 新增通话质检工单（通话开始时调用）
+export function saveCallQualityWorkOrder(data) {
+  return request({
+    url: '/project/callQualityWorkOrder/saveCallQualityWorkOrder',
+    method: 'post',
+    data: data,
+  });
+}
+
+// 修改通话质检工单（通话结束时调用）
+export function updateCallQualityWorkOrder(data) {
+  return request({
+    url: '/project/callQualityWorkOrder/updateCallQualityWorkOrder',
+    method: 'post',
+    data: data,
+  });
+}
+
 // SSE 表单解析
 export function SSEGetFromData(data) {
   return request({

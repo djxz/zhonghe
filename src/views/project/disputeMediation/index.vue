@@ -734,6 +734,7 @@
       dialog-title="河东法院导入"
       upload-path="/project/disputeMediation/importByHD"
       :show-template-links="false"
+      :show-hd-template-link="true"
       @callback="getList"
     />
 
