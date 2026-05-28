@@ -643,19 +643,19 @@ export function cancelMediatorReminder(data) {
   });
 }
 
-// 新增通话质检工单（通话开始时调用）
+// 新增通话质检工单（通话开始时调用，expand 服务）
 export function saveCallQualityWorkOrder(data) {
   return request({
-    url: '/project/callQualityWorkOrder/saveCallQualityWorkOrder',
+    url: expandServiceUrl('/project/callQualityWorkOrder/saveCallQualityWorkOrder'),
     method: 'post',
     data: data,
   });
 }
 
-// 修改通话质检工单（通话结束时调用）
+// 修改通话质检工单（通话结束时调用，expand 服务）
 export function updateCallQualityWorkOrder(data) {
   return request({
-    url: '/project/callQualityWorkOrder/updateCallQualityWorkOrder',
+    url: expandServiceUrl('/project/callQualityWorkOrder/updateCallQualityWorkOrder'),
     method: 'post',
     data: data,
   });

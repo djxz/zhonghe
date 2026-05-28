@@ -183,7 +183,17 @@ export default {
       minisize: false,
       callQualityWorkOrderId: null,
       callAnsweredFlag: false,
+      callEndHandled: false,
+      lastCallStatus: '',
     };
+  },
+  computed: {
+    callInfoCallStatus() {
+      return this.$store.state.settings.callInfo.callStatus;
+    },
+    callInfoData() {
+      return this.$store.state.settings.callInfo.data || {};
+    },
   },
   watch: {
     "dialogVisible"(nVal, oVal) {
@@ -216,28 +226,20 @@ export default {
           }
           this.callQualityWorkOrderId = null;
           this.callAnsweredFlag = false;
+          this.callEndHandled = false;
+          this.lastCallStatus = '';
         }
       }
       if (nVal) {
         this.$nextTick(() => this.$refs.investigationRecordForm.refreshTime())
       }
     },
-    '$store.state.settings.callInfo': {
-      handler(newVal) {
-        if (!this.dialogVisible) return;
-        const data = (newVal && newVal.data) || {};
-        const callStatus = (newVal && newVal.callStatus) || '';
-        const isAnswered = callStatus === 'busy' && (
-          (data.call_direction === 'outbound' && data.private_data === 'answered' && data.other_answered === true) ||
-          (data.call_direction === 'inbound' && data.private_data === 'answered')
-        );
-        if (isAnswered && !this.callAnsweredFlag) {
-          this.callAnsweredFlag = true;
-          this.onCallStart();
-        }
-        if (callStatus === 'acw' && this.callQualityWorkOrderId !== null) {
-          this.onCallEnd();
-        }
+    callInfoCallStatus() {
+      this.handleCallQualityState();
+    },
+    callInfoData: {
+      handler() {
+        this.handleCallQualityState();
       },
       deep: true,
     },
@@ -257,8 +259,11 @@ export default {
         this.formData.mediatorName = row.mediatorName;
         this.callQualityWorkOrderId = null;
         this.callAnsweredFlag = false;
+        this.callEndHandled = false;
+        this.lastCallStatus = '';
       }
       this.dialogVisible = true;
+      this.$nextTick(() => this.handleCallQualityState());
     },
     cancel() {
       this.dialogVisible = false;
@@ -405,6 +410,43 @@ export default {
     handelCoverForm() {
       this.$refs.investigationRecordForm.setFormInfo({ ...this.diaputeForm });
     },
+    /** 调查记录弹框会话是否有效（含最小化） */
+    isInvestigationCallSessionActive() {
+      return this.dialogVisible || this.minisize;
+    },
+    handleCallQualityState() {
+      if (!this.isInvestigationCallSessionActive()) return;
+
+      const data = this.callInfoData || {};
+      const callStatus = data.state || this.callInfoCallStatus || '';
+      const prevStatus = this.lastCallStatus;
+
+      const isOutboundAnswered = data.call_direction === 'outbound'
+        && data.private_data === 'answered'
+        && data.other_answered !== false;
+      const isInboundAnswered = data.call_direction === 'inbound'
+        && data.private_data === 'answered';
+      const isAnswered = callStatus === 'busy' && (isOutboundAnswered || isInboundAnswered);
+
+      if (isAnswered && !this.callAnsweredFlag) {
+        this.callEndHandled = false;
+        this.callAnsweredFlag = true;
+        this.onCallStart();
+      }
+
+      const endedFromBusy = prevStatus === 'busy' && (callStatus === 'acw' || callStatus === 'ready');
+      const shouldEndCall = (callStatus === 'acw' || endedFromBusy)
+        && this.callAnsweredFlag
+        && !this.callEndHandled
+        && this.callQualityWorkOrderId != null;
+
+      if (shouldEndCall) {
+        this.callEndHandled = true;
+        this.onCallEnd();
+      }
+
+      this.lastCallStatus = callStatus;
+    },
     async onCallStart() {
       try {
         const res = await saveCallQualityWorkOrder({
@@ -424,6 +466,7 @@ export default {
     },
     async onCallEnd() {
       const id = this.callQualityWorkOrderId;
+      if (id == null) return;
       this.callQualityWorkOrderId = null;
       this.callAnsweredFlag = false;
       try {
