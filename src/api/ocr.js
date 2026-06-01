@@ -36,7 +36,7 @@ export function ocrFormDataPost(path, formData, timeout = 120000) {
     });
 }
 
-/** 图片 OCR 识别上传 */
+/** 图片 / PDF OCR 识别上传 */
 export function uploadOcr(formData, timeout = 120000) {
     return ocrFormDataPost('/ocr/upload', formData, timeout);
 }

@@ -38,11 +38,11 @@
             </el-row>
             <el-row v-if="form.entryChannel && form.entryChannel !== DM_ENTRY_CHANNEL.E">
               <el-col :span="24">
-                <el-form-item label="图片信息识别">
+                <el-form-item label="图片/pdf信息识别">
                   <el-upload
                     ref="ocrUpload"
                     action=""
-                    accept="image/*"
+                    accept="image/*,.pdf,application/pdf"
                     multiple
                     :show-file-list="false"
                     :limit="5"
@@ -51,9 +51,9 @@
                     :on-exceed="handleOcrExceed"
                     :auto-upload="true"
                   >
-                    <el-button size="mini" type="primary">上传图片</el-button>
+                    <el-button size="mini" type="primary">上传图片/PDF</el-button>
                     <span slot="tip" class="el-upload__tip" style="margin-left: 12px">
-                      支持一次选择多张图片，批量识别工单相关信息
+                      支持一次选择多张图片或 PDF，批量识别工单相关信息
                     </span>
                   </el-upload>
                   <ul v-if="ocrRecognizeRecords.length" class="recognize-records-list">
@@ -1364,8 +1364,8 @@ export default {
       }
       return { sex, age };
     },
-    /** Excel 回填后，按证件类型+证件号推导性别、年龄 */
-    applyIdCardDerivedFieldsAfterExcel() {
+    /** 回填后按证件类型+证件号推导性别、年龄（消费者/代理人/机构代表） */
+    applyIdCardDerivedFields() {
       const consumer = this.parseIdCardSexAndAge(
         this.form.certType,
         this.form.certNum
@@ -1488,21 +1488,34 @@ export default {
         }
       }
     },
-    beforeOcrUpload(file) {
-      const isImg = file.type && file.type.startsWith("image/");
-      if (!isImg) {
-        this.$modal.msgError("请上传图片文件");
+    isOcrRecognizeFile(file) {
+      if (!file) {
         return false;
       }
-      const maxMb = 10;
+      const name = (file.name || "").toLowerCase();
+      const type = file.type || "";
+      return (
+        (type && type.startsWith("image/")) ||
+        type === "application/pdf" ||
+        name.endsWith(".pdf")
+      );
+    },
+    beforeOcrUpload(file) {
+      if (!this.isOcrRecognizeFile(file)) {
+        this.$modal.msgError("请上传图片或 PDF 文件");
+        return false;
+      }
+      const isPdf =
+        file.type === "application/pdf" || (file.name || "").toLowerCase().endsWith(".pdf");
+      const maxMb = isPdf ? 20 : 10;
       if (file.size / 1024 / 1024 >= maxMb) {
-        this.$modal.msgError(`图片大小不能超过 ${maxMb} MB`);
+        this.$modal.msgError(`${isPdf ? "PDF" : "图片"}大小不能超过 ${maxMb} MB`);
         return false;
       }
       return true;
     },
     handleOcrExceed() {
-      this.$modal.msgError("上传图片数量不能超过 5 张");
+      this.$modal.msgError("上传文件数量不能超过 5 个");
     },
     /** el-upload 自定义上传：取原生 File（option.file.raw） */
     resolveUploadRawFile(option) {
@@ -1531,7 +1544,7 @@ export default {
     handleOcrUpload(option) {
       const raw = this.resolveUploadRawFile(option);
       if (!raw) {
-        this.$modal.msgError("无法读取图片文件，请重新选择");
+        this.$modal.msgError("无法读取文件，请重新选择");
         option.onError(new Error("invalid upload file"));
         return;
       }
@@ -1548,12 +1561,12 @@ export default {
       if (!files.length) {
         return;
       }
-      this.$modal.loading("正在上传并识别图片，请稍候...");
+      this.$modal.loading("正在上传并识别，请稍候...");
       const fd = new FormData();
       files.forEach((f) => {
         fd.append("file", f, f.name);
       });
-      const fileLabel = files.map((f) => f.name || "图片").join("、");
+      const fileLabel = files.map((f) => f.name || "文件").join("、");
       uploadOcr(fd, 120000)
         .then((res) => {
           const body = res.data;
@@ -1599,8 +1612,8 @@ export default {
           }
           this.$modal.msgSuccess(
             mapped > 0
-              ? "图片识别完成，已根据识别结果填入左侧表单"
-              : "图片识别完成，未识别到可自动填入的文本项（或均为「无」）"
+              ? "识别完成，已根据识别结果填入左侧表单"
+              : "识别完成，未识别到可自动填入的文本项（或均为「无」）"
           );
         })
         .catch((err) => {
@@ -2124,6 +2137,8 @@ export default {
         this.$set(this.form, key, strVal);
         count += 1;
       });
+      // 每次图片/PDF 识别回填后，根据身份证号重新推导消费者性别、年龄（覆盖 OCR 原文返回值）
+      this.applyIdCardDerivedFields();
       return count;
     },
     /**
@@ -2224,7 +2239,7 @@ export default {
       if (deptIdChanged) {
         this.$nextTick(() => this.deptChange());
       }
-      this.applyIdCardDerivedFieldsAfterExcel();
+      this.applyIdCardDerivedFields();
       return count;
     },
     normalizeExcelFormValue(key, raw, numericInputKeys, contactPhoneKeys, cascaderKeys) {
