@@ -146,7 +146,13 @@
 </template>
 
 <script>
-import { addMediationRecord, SSEGetFromData } from '@/api/project/disputeMediation';
+import {
+  addMediationRecord,
+  SSEGetFromData,
+  saveCallQualityWorkOrder,
+  saveCallTranscriptDetail,
+  updateCallQualityWorkOrder,
+} from '@/api/project/disputeMediation';
 import { parseTime } from '@/utils/ruoyi';
 import recordForm from './formInfo.vue';
 import { DEPT_TYPE, SYS_YES_NO } from '@/views/constant/CommonConstant'
@@ -178,7 +184,20 @@ export default {
       sseList: [],
       formId: null,
       minisize: false,
+      callQualityWorkOrderId: null,
+      callAnsweredFlag: false,
+      callEndHandled: false,
+      callQualityRecordLinked: false,
+      lastCallStatus: '',
     };
+  },
+  computed: {
+    callInfoCallStatus() {
+      return this.$store.state.settings.callInfo.callStatus;
+    },
+    callInfoData() {
+      return this.$store.state.settings.callInfo.data || {};
+    },
   },
   created() {
     // console.log('🚀 ~ 开始打印 ~ this.$callWs.state.formData :', this.$callWs.state.formData.ola_extn)
@@ -215,11 +234,25 @@ export default {
             this.run = false
             console.log('SSE 连接已关闭');
           }
+          this.callQualityWorkOrderId = null;
+          this.callAnsweredFlag = false;
+          this.callEndHandled = false;
+          this.callQualityRecordLinked = false;
+          this.lastCallStatus = '';
         }
       }
       if (nVal) {
         this.$nextTick(() => this.$refs.mediationRecordForm.refreshTime())
       }
+    },
+    callInfoCallStatus() {
+      this.handleCallQualityState();
+    },
+    callInfoData: {
+      handler() {
+        this.handleCallQualityState();
+      },
+      deep: true,
     },
   },
   methods: {
@@ -230,8 +263,14 @@ export default {
       } else {
         this.formData.workOrderId = row.workOrderId;
         this.formData.participant = row.mediatorName + ',' + row.assistantName;
+        this.callQualityWorkOrderId = null;
+        this.callAnsweredFlag = false;
+        this.callEndHandled = false;
+        this.callQualityRecordLinked = false;
+        this.lastCallStatus = '';
       }
       this.dialogVisible = true;
+      this.$nextTick(() => this.handleCallQualityState());
     },
     cancel() {
       this.dialogVisible = false;
@@ -273,6 +312,15 @@ export default {
         childrenFormData.time = parseTime(childrenFormData.time, '{y}-{m}-{d} {h}:{i}:{s}');
         childrenFormData.workOrderId = this.formData.workOrderId;
         const res = await addMediationRecord(childrenFormData);
+        if (res.code === 200 && this.callQualityWorkOrderId != null && this.callAnsweredFlag) {
+          const recordData = res.data || {};
+          await this.updateCallQualityWorkOrderForMediation({
+            recordId: recordData.mediationRecordId,
+            recordTime: recordData.time,
+          });
+          this.callQualityRecordLinked = true;
+          await this.saveCallTranscriptDetailIfNeeded();
+        }
         this.$modal.msgSuccess(res.msg);
         this.$emit('callback', 'b', this.row, true);
         this.cancel();
@@ -300,7 +348,7 @@ export default {
     initSSE() {
       const nowFormId = this.formId;
 
-      if (typeof (EventSource) !== "undefined") {
+      if (typeof (EventSource) !== "undefined" && this.run === false) {
         const source = new EventSource(`/asr/stream/?code=${this.extn}`);
         source.onmessage = (event) => {
           try {
@@ -308,19 +356,20 @@ export default {
             if (resData.event === 'run') {
               const list = [...this.sseList]
               const { direction, complete, data } = resData;
+              const now = Date.now();
               if (direction === '2') {
                 const lastIndex = list.findLastIndex(item => item.role === "投诉人" && item.complete === 'false');
                 if (lastIndex !== -1) {
-                  list[lastIndex] = { role: "投诉人", message: data, complete }
+                  list[lastIndex] = { ...list[lastIndex], role: "投诉人", message: data, complete };
                 } else {
-                  list[list.length] = { role: "投诉人", message: data, complete }
+                  list[list.length] = { role: "投诉人", message: data, complete, timestamp: now };
                 }
               } else {
                 const lastIndex = list.findLastIndex(item => item.role === "调解员" && item.complete === 'false');
                 if (lastIndex !== -1) {
-                  list[lastIndex] = { role: "调解员", message: data, complete }
+                  list[lastIndex] = { ...list[lastIndex], role: "调解员", message: data, complete };
                 } else {
-                  list[list.length] = { role: "调解员", message: data, complete }
+                  list[list.length] = { role: "调解员", message: data, complete, timestamp: now };
                 }
               }
               this.sseList = list
@@ -331,11 +380,7 @@ export default {
                 this.getDataInterval = null
                 source.close();
                 if (this.completedCount() >= 2) {
-                  SSEGetFromData({ content: this.sseList.filter(d => d.complete), type: 1 }).then(res => {
-                    if (res.code === 200 && nowFormId === this.formId) {
-                      this.diaputeForm = res.data
-                    }
-                  })
+                  this.fetchMediationFormFromSSE(this.sseList.filter(d => d.complete), nowFormId);
                 } else {
                   this.initSSE();
                 }
@@ -349,12 +394,8 @@ export default {
           if (!this.getDataInterval && this.run === false) {
             this.getDataInterval = setInterval(() => {
               if (this.completedCount() >= 2) {
-                this.run = true
-                SSEGetFromData({ content: this.sseList.filter(d => d.complete), type: 1 }).then(res => {
-                  if (res.code === 200 && nowFormId === this.formId) {
-                    this.diaputeForm = res.data
-                  }
-                })
+                this.run = true;
+                this.fetchMediationFormFromSSE(this.sseList.filter(d => d.complete), nowFormId);
               }
             }, 60000);
           }
@@ -372,7 +413,130 @@ export default {
     },
     handelCoverForm() {
       this.$refs.mediationRecordForm.setFormInfo({ ...this.diaputeForm });
-    }
+    },
+    /** 调解记录弹框会话是否有效（含最小化） */
+    isMediationCallSessionActive() {
+      return this.dialogVisible || this.minisize;
+    },
+    handleCallQualityState() {
+      if (!this.isMediationCallSessionActive()) return;
+
+      const data = this.callInfoData || {};
+      const callStatus = data.state || this.callInfoCallStatus || '';
+      const prevStatus = this.lastCallStatus;
+
+      const isOutboundAnswered = data.call_direction === 'outbound'
+        && data.private_data === 'answered'
+        && data.other_answered !== false;
+      const isInboundAnswered = data.call_direction === 'inbound'
+        && data.private_data === 'answered';
+      const isAnswered = callStatus === 'busy' && (isOutboundAnswered || isInboundAnswered);
+
+      if (isAnswered && !this.callAnsweredFlag) {
+        this.callEndHandled = false;
+        this.callAnsweredFlag = true;
+        this.onCallStart();
+      }
+
+      const endedFromBusy = prevStatus === 'busy' && (callStatus === 'acw' || callStatus === 'ready');
+      const shouldEndCall = (callStatus === 'acw' || endedFromBusy)
+        && this.callAnsweredFlag
+        && !this.callEndHandled
+        && this.callQualityWorkOrderId != null;
+
+      if (shouldEndCall) {
+        this.callEndHandled = true;
+        this.onCallEnd();
+      }
+
+      this.lastCallStatus = callStatus;
+    },
+    async onCallStart() {
+      try {
+        const res = await saveCallQualityWorkOrder({
+          workOrderId: this.row.workOrderId,
+          entryChannel: this.row.entryChannel,
+          consumerName: this.row.name,
+          mediatorUserName: this.$store.getters.userInfo.nickName,
+          mediatorUserId: this.row.mediatorUserId,
+          consumerPhone: this.row.phone,
+        });
+        if (res && res.code === 200 && res.data && res.data.id != null) {
+          this.callQualityWorkOrderId = res.data.id;
+        }
+      } catch (e) {
+        console.error('保存通话质检工单失败:', e);
+      }
+    },
+    /** 更新通话质检工单（仅已接听且有工单 id 时调用） */
+    async updateCallQualityWorkOrderForMediation({ recordId = '', recordTime = '' } = {}) {
+      const id = this.callQualityWorkOrderId;
+      if (id == null || !this.callAnsweredFlag) return;
+      try {
+        await updateCallQualityWorkOrder({
+          id,
+          mediatorUserId: this.row.mediatorUserId,
+          recordType: 'mediationRecord',
+          recordId: recordId != null ? String(recordId) : '',
+          recordTime: recordTime != null ? String(recordTime) : '',
+        });
+      } catch (e) {
+        console.error('更新通话质检工单失败:', e);
+      }
+    },
+    async onCallEnd() {
+      if (this.callQualityWorkOrderId == null || this.callQualityRecordLinked) return;
+      await this.saveCallTranscriptDetailIfNeeded();
+      await this.updateCallQualityWorkOrderForMediation({ recordId: '', recordTime: '' });
+    },
+    getCompletedSseContent() {
+      return this.sseList.filter(d => d && (d.complete === true || d.complete === 'true'));
+    },
+    mapRoleToTranscriptRole(role) {
+      return role === '投诉人' ? 'consumer' : 'mediator';
+    },
+    formatTranscriptTimestamp(ts) {
+      const date = ts != null ? new Date(ts) : new Date();
+      if (Number.isNaN(date.getTime())) {
+        return new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+      }
+      return date.toISOString().replace(/\.\d{3}Z$/, 'Z');
+    },
+    buildCallTranscriptMessages() {
+      return this.getCompletedSseContent()
+        .filter(d => String(d.message || '').trim())
+        .map(d => ({
+          role: this.mapRoleToTranscriptRole(d.role),
+          content: String(d.message || '').trim(),
+          timestamp: this.formatTranscriptTimestamp(d.timestamp),
+        }));
+    },
+    async saveCallTranscriptDetailIfNeeded() {
+      if (!this.callAnsweredFlag || this.callQualityWorkOrderId == null) return;
+      const messages = this.buildCallTranscriptMessages();
+      if (!messages.length) return;
+      try {
+        await saveCallTranscriptDetail({
+          id: this.callQualityWorkOrderId,
+          workOrderId: this.row.workOrderId,
+          mediatorUserId: this.row.mediatorUserId,
+          messages,
+        });
+      } catch (e) {
+        console.error('保存通话转写详情失败:', e);
+      }
+    },
+    async fetchMediationFormFromSSE(content, nowFormId) {
+      try {
+        const res = await SSEGetFromData({ content, type: 1 });
+        if (res.code === 200 && nowFormId === this.formId) {
+          this.diaputeForm = res.data;
+          await this.saveCallTranscriptDetailIfNeeded();
+        }
+      } catch (e) {
+        console.error('解析调解表单失败:', e);
+      }
+    },
   }
 };
 </script>

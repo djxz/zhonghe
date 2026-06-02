@@ -419,6 +419,11 @@
           <dict-tag :options="dict.type.dm_finish_type" :value="scope.row.finishType" />
         </template>
       </el-table-column>
+      <el-table-column label="满意度" align="center" prop="satisfactionScore" width="80" v-if="columns.find((s) => s.label === '满意度').visible">
+        <template slot-scope="scope">
+          <span>{{ scope.row.satisfactionScore != null && scope.row.satisfactionScore !== '' ? scope.row.satisfactionScore : '-' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="创建时间" align="center" prop="createTime" width="100" v-if="columns.find(s => s.label === '创建时间').visible" sortable="custom">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
@@ -1004,6 +1009,7 @@ export default {
         {label: `协议阶段`, visible: false},
         {label: `调解结果`, visible: false},
         {label: `结案类型`, visible: false},
+        {label: `满意度`, visible: true},
         {label: `创建时间`, visible: true},
         {label: `修改时间`, visible: false},
       ],

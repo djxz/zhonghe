@@ -661,6 +661,15 @@ export function updateCallQualityWorkOrder(data) {
   });
 }
 
+// 保存通话转写详情（expand 服务）
+export function saveCallTranscriptDetail(data) {
+  return request({
+    url: expandServiceUrl('/project/callTranscriptDetail/saveCallTranscriptDetail'),
+    method: 'post',
+    data: data,
+  });
+}
+
 // SSE 表单解析
 export function SSEGetFromData(data) {
   return request({

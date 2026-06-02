@@ -146,7 +146,13 @@
 </template>
 
 <script>
-import { addInvestigationRecord, SSEGetFromData, saveCallQualityWorkOrder, updateCallQualityWorkOrder } from '@/api/project/disputeMediation';
+import {
+  addInvestigationRecord,
+  SSEGetFromData,
+  saveCallQualityWorkOrder,
+  saveCallTranscriptDetail,
+  updateCallQualityWorkOrder,
+} from '@/api/project/disputeMediation';
 import { parseTime } from '@/utils/ruoyi';
 import recordForm from './formInfo.vue';
 import { DEPT_TYPE, SYS_YES_NO } from "@/views/constant/CommonConstant";
@@ -184,6 +190,7 @@ export default {
       callQualityWorkOrderId: null,
       callAnsweredFlag: false,
       callEndHandled: false,
+      callQualityRecordLinked: false,
       lastCallStatus: '',
     };
   },
@@ -227,6 +234,7 @@ export default {
           this.callQualityWorkOrderId = null;
           this.callAnsweredFlag = false;
           this.callEndHandled = false;
+          this.callQualityRecordLinked = false;
           this.lastCallStatus = '';
         }
       }
@@ -260,6 +268,7 @@ export default {
         this.callQualityWorkOrderId = null;
         this.callAnsweredFlag = false;
         this.callEndHandled = false;
+        this.callQualityRecordLinked = false;
         this.lastCallStatus = '';
       }
       this.dialogVisible = true;
@@ -306,6 +315,15 @@ export default {
         const childrenFormData = this.$refs.investigationRecordForm.getFormData();
         childrenFormData.time = parseTime(childrenFormData.time, '{y}-{m}-{d} {h}:{i}:{s}');
         const res = await addInvestigationRecord(childrenFormData);
+        if (res.code === 200 && this.callQualityWorkOrderId != null && this.callAnsweredFlag) {
+          const recordData = res.data || {};
+          await this.updateCallQualityWorkOrderForInvestigation({
+            recordId: recordData.investigationRecordId,
+            recordTime: recordData.time,
+          });
+          this.callQualityRecordLinked = true;
+          await this.saveCallTranscriptDetailIfNeeded();
+        }
         this.$modal.msgSuccess(res.msg);
         this.$emit('callback', 'b', this.row);
         this.cancel();
@@ -343,19 +361,20 @@ export default {
             if (resData.event === 'run') {
               const list = [...this.sseList]
               const { direction, complete, data } = resData;
+              const now = Date.now();
               if (direction === '2') {
                 const lastIndex = list.findLastIndex(item => item.role === "投诉人" && item.complete === 'false');
                 if (lastIndex !== -1) {
-                  list[lastIndex] = { role: "投诉人", message: data, complete }
+                  list[lastIndex] = { ...list[lastIndex], role: "投诉人", message: data, complete };
                 } else {
-                  list[list.length] = { role: "投诉人", message: data, complete }
+                  list[list.length] = { role: "投诉人", message: data, complete, timestamp: now };
                 }
               } else {
                 const lastIndex = list.findLastIndex(item => item.role === "调解员" && item.complete === 'false');
                 if (lastIndex !== -1) {
-                  list[lastIndex] = { role: "调解员", message: data, complete }
+                  list[lastIndex] = { ...list[lastIndex], role: "调解员", message: data, complete };
                 } else {
-                  list[list.length] = { role: "调解员", message: data, complete }
+                  list[list.length] = { role: "调解员", message: data, complete, timestamp: now };
                 }
               }
               this.sseList = list
@@ -367,11 +386,7 @@ export default {
                 source.close();
 
                 if (this.completedCount() >= 2) {
-                  SSEGetFromData({ content: this.sseList.filter(d => d.complete), type: 0 }).then(res => {
-                    if (res.code === 200 && nowFormId === this.formId) {
-                      this.diaputeForm = res.data
-                    }
-                  })
+                  this.fetchInvestigationFormFromSSE(this.sseList.filter(d => d.complete), nowFormId);
                 } else {
                   this.initSSE();
                 }
@@ -386,12 +401,8 @@ export default {
           if (!this.getDataInterval && this.run === false) {
             this.getDataInterval = setInterval(() => {
               if (this.completedCount() >= 2) {
-                this.run = true
-                SSEGetFromData({ content: this.sseList.filter(d => d.complete), type: 0 }).then(res => {
-                  if (res.code === 200 && nowFormId === this.formId) {
-                    this.diaputeForm = res.data
-                  }
-                })
+                this.run = true;
+                this.fetchInvestigationFormFromSSE(this.sseList.filter(d => d.complete), nowFormId);
               }
             }, 60000);
           }
@@ -457,25 +468,81 @@ export default {
           mediatorUserId: this.row.mediatorUserId,
           consumerPhone: this.row.phone,
         });
-        if (res && res.code === 200) {
-          this.callQualityWorkOrderId = res.data;
+        if (res && res.code === 200 && res.data && res.data.id != null) {
+          this.callQualityWorkOrderId = res.data.id;
         }
       } catch (e) {
         console.error('保存通话质检工单失败:', e);
       }
     },
-    async onCallEnd() {
+    /** 更新通话质检工单（仅已接听且有工单 id 时调用） */
+    async updateCallQualityWorkOrderForInvestigation({ recordId = '', recordTime = '' } = {}) {
       const id = this.callQualityWorkOrderId;
-      if (id == null) return;
-      this.callQualityWorkOrderId = null;
-      this.callAnsweredFlag = false;
+      if (id == null || !this.callAnsweredFlag) return;
       try {
         await updateCallQualityWorkOrder({
           id,
           mediatorUserId: this.row.mediatorUserId,
+          recordType: 'investigationRecord',
+          recordId: recordId != null ? String(recordId) : '',
+          recordTime: recordTime != null ? String(recordTime) : '',
         });
       } catch (e) {
         console.error('更新通话质检工单失败:', e);
+      }
+    },
+    async onCallEnd() {
+      if (this.callQualityWorkOrderId == null || this.callQualityRecordLinked) return;
+      await this.saveCallTranscriptDetailIfNeeded();
+      await this.updateCallQualityWorkOrderForInvestigation({ recordId: '', recordTime: '' });
+    },
+    /** 与 /asr/parse 入参一致：取已完整的语音识别条目 */
+    getCompletedSseContent() {
+      return this.sseList.filter(d => d && (d.complete === true || d.complete === 'true'));
+    },
+    mapRoleToTranscriptRole(role) {
+      return role === '投诉人' ? 'consumer' : 'mediator';
+    },
+    formatTranscriptTimestamp(ts) {
+      const date = ts != null ? new Date(ts) : new Date();
+      if (Number.isNaN(date.getTime())) {
+        return new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+      }
+      return date.toISOString().replace(/\.\d{3}Z$/, 'Z');
+    },
+    buildCallTranscriptMessages() {
+      return this.getCompletedSseContent()
+        .filter(d => String(d.message || '').trim())
+        .map(d => ({
+          role: this.mapRoleToTranscriptRole(d.role),
+          content: String(d.message || '').trim(),
+          timestamp: this.formatTranscriptTimestamp(d.timestamp),
+        }));
+    },
+    async saveCallTranscriptDetailIfNeeded() {
+      if (!this.callAnsweredFlag || this.callQualityWorkOrderId == null) return;
+      const messages = this.buildCallTranscriptMessages();
+      if (!messages.length) return;
+      try {
+        await saveCallTranscriptDetail({
+          id: this.callQualityWorkOrderId,
+          workOrderId: this.row.workOrderId,
+          mediatorUserId: this.row.mediatorUserId,
+          messages,
+        });
+      } catch (e) {
+        console.error('保存通话转写详情失败:', e);
+      }
+    },
+    async fetchInvestigationFormFromSSE(content, nowFormId) {
+      try {
+        const res = await SSEGetFromData({ content, type: 0 });
+        if (res.code === 200 && nowFormId === this.formId) {
+          this.diaputeForm = res.data;
+          await this.saveCallTranscriptDetailIfNeeded();
+        }
+      } catch (e) {
+        console.error('解析调查表单失败:', e);
       }
     },
   }
