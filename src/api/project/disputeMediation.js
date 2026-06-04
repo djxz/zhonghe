@@ -16,6 +16,16 @@ function assertExpandBaseUrl() {
   }
 }
 
+/** ASR 服务根路径（语音识别 stream / parse，与 SSEGetFromData 一致） */
+const ASR_SERVICE_BASE_URL = 'http://192.168.50.18:8080/api/v1/';
+
+/** 构建 ASR 实时转写 SSE 地址 */
+export function getAsrStreamUrl(code) {
+  const base = ASR_SERVICE_BASE_URL.replace(/\/$/, '');
+  const seatCode = encodeURIComponent(String(code ?? '').trim());
+  return `${base}/asr/stream/?code=${seatCode}`;
+}
+
 /** FormData 上传至 expand 服务（multipart，不使用全局 application/json） */
 export function expandFormDataPost(path, formData, timeout = 120000) {
   assertExpandBaseUrl();
@@ -677,8 +687,7 @@ export function SSEGetFromData(data) {
     method: "post",
     data: data,
     timeout: 180000,
-    baseURL: ''
-    // baseURL: 'http://192.168.50.18:8080/api/v1/'
+    baseURL: ASR_SERVICE_BASE_URL,
   });
 }
 

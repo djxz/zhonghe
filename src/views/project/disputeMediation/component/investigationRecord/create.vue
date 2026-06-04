@@ -191,16 +191,9 @@ export default {
       callAnsweredFlag: false,
       callEndHandled: false,
       callQualityRecordLinked: false,
-      lastCallStatus: '',
+      callStartPromise: null,
+      callTranscriptDetailSaved: false,
     };
-  },
-  computed: {
-    callInfoCallStatus() {
-      return this.$store.state.settings.callInfo.callStatus;
-    },
-    callInfoData() {
-      return this.$store.state.settings.callInfo.data || {};
-    },
   },
   watch: {
     "dialogVisible"(nVal, oVal) {
@@ -235,21 +228,13 @@ export default {
           this.callAnsweredFlag = false;
           this.callEndHandled = false;
           this.callQualityRecordLinked = false;
-          this.lastCallStatus = '';
+          this.callStartPromise = null;
+          this.callTranscriptDetailSaved = false;
         }
       }
       if (nVal) {
         this.$nextTick(() => this.$refs.investigationRecordForm.refreshTime())
       }
-    },
-    callInfoCallStatus() {
-      this.handleCallQualityState();
-    },
-    callInfoData: {
-      handler() {
-        this.handleCallQualityState();
-      },
-      deep: true,
     },
   },
   created() {
@@ -269,10 +254,10 @@ export default {
         this.callAnsweredFlag = false;
         this.callEndHandled = false;
         this.callQualityRecordLinked = false;
-        this.lastCallStatus = '';
+        this.callStartPromise = null;
+        this.callTranscriptDetailSaved = false;
       }
       this.dialogVisible = true;
-      this.$nextTick(() => this.handleCallQualityState());
     },
     cancel() {
       this.dialogVisible = false;
@@ -312,6 +297,7 @@ export default {
         }
 
         this.btnLoading = true;
+        await this.finalizeCallOnSubmitIfNeeded();
         const childrenFormData = this.$refs.investigationRecordForm.getFormData();
         childrenFormData.time = parseTime(childrenFormData.time, '{y}-{m}-{d} {h}:{i}:{s}');
         const res = await addInvestigationRecord(childrenFormData);
@@ -322,7 +308,6 @@ export default {
             recordTime: recordData.time,
           });
           this.callQualityRecordLinked = true;
-          await this.saveCallTranscriptDetailIfNeeded();
         }
         this.$modal.msgSuccess(res.msg);
         this.$emit('callback', 'b', this.row);
@@ -354,11 +339,16 @@ export default {
       const nowFormId = this.formId;
 
       if (typeof (EventSource) !== "undefined" && this.run === false) {
-        const source = new EventSource(`/asr/stream/?code=${this.extn}`);
+        // const source = new EventSource(`/asr/stream/?code=${this.extn}`);
+        const source = new EventSource(`http://192.168.50.18:8080/api/v1/asr/stream/?code=139`);
+
         source.onmessage = (event) => {
           try {
             const resData = JSON.parse(event.data);
             if (resData.event === 'run') {
+              if (!this.callAnsweredFlag) {
+                this.handleSseCallStart();
+              }
               const list = [...this.sseList]
               const { direction, complete, data } = resData;
               const now = Date.now();
@@ -379,7 +369,7 @@ export default {
               }
               this.sseList = list
             } else if (resData.event === 'end') {
-              console.log(resData.event);
+              this.handleSseCallEnd();
               if (this.getDataInterval) {
                 clearInterval(this.getDataInterval);
                 this.getDataInterval = null
@@ -425,38 +415,36 @@ export default {
     isInvestigationCallSessionActive() {
       return this.dialogVisible || this.minisize;
     },
-    handleCallQualityState() {
+    /** ASR 首次 run：通话接通，创建质检工单 */
+    handleSseCallStart() {
+      if (!this.isInvestigationCallSessionActive() || this.callAnsweredFlag) return;
+      this.callAnsweredFlag = true;
+      this.callEndHandled = false;
+      if (!this.callStartPromise) {
+        this.callStartPromise = this.onCallStart().finally(() => {
+          this.callStartPromise = null;
+        });
+      }
+    },
+    /** ASR end：通话结束，保存转写并更新质检工单 */
+    async handleSseCallEnd() {
       if (!this.isInvestigationCallSessionActive()) return;
-
-      const data = this.callInfoData || {};
-      const callStatus = data.state || this.callInfoCallStatus || '';
-      const prevStatus = this.lastCallStatus;
-
-      const isOutboundAnswered = data.call_direction === 'outbound'
-        && data.private_data === 'answered'
-        && data.other_answered !== false;
-      const isInboundAnswered = data.call_direction === 'inbound'
-        && data.private_data === 'answered';
-      const isAnswered = callStatus === 'busy' && (isOutboundAnswered || isInboundAnswered);
-
-      if (isAnswered && !this.callAnsweredFlag) {
-        this.callEndHandled = false;
-        this.callAnsweredFlag = true;
-        this.onCallStart();
+      if (!this.callAnsweredFlag || this.callEndHandled || this.callQualityRecordLinked) return;
+      if (this.callStartPromise) {
+        await this.callStartPromise;
       }
-
-      const endedFromBusy = prevStatus === 'busy' && (callStatus === 'acw' || callStatus === 'ready');
-      const shouldEndCall = (callStatus === 'acw' || endedFromBusy)
-        && this.callAnsweredFlag
-        && !this.callEndHandled
-        && this.callQualityWorkOrderId != null;
-
-      if (shouldEndCall) {
-        this.callEndHandled = true;
-        this.onCallEnd();
+      this.callEndHandled = true;
+      await this.saveCallTranscriptDetailOnCallEnd();
+      await this.onCallEnd();
+    },
+    /** 提交前若通话未正常结束，补调结束接口 */
+    async finalizeCallOnSubmitIfNeeded() {
+      if (this.callStartPromise) {
+        await this.callStartPromise;
       }
-
-      this.lastCallStatus = callStatus;
+      if (!this.callAnsweredFlag || this.callEndHandled || this.callQualityRecordLinked) return;
+      this.callEndHandled = true;
+      await this.onCallEnd();
     },
     async onCallStart() {
       try {
@@ -493,7 +481,6 @@ export default {
     },
     async onCallEnd() {
       if (this.callQualityWorkOrderId == null || this.callQualityRecordLinked) return;
-      await this.saveCallTranscriptDetailIfNeeded();
       await this.updateCallQualityWorkOrderForInvestigation({ recordId: '', recordTime: '' });
     },
     /** 与 /asr/parse 入参一致：取已完整的语音识别条目 */
@@ -519,18 +506,21 @@ export default {
           timestamp: this.formatTranscriptTimestamp(d.timestamp),
         }));
     },
-    async saveCallTranscriptDetailIfNeeded() {
-      if (!this.callAnsweredFlag || this.callQualityWorkOrderId == null) return;
+    /** 通话结束（ASR end）时保存转写，仅调用一次 */
+    async saveCallTranscriptDetailOnCallEnd() {
+      if (this.callTranscriptDetailSaved || !this.callAnsweredFlag || this.callQualityWorkOrderId == null) return;
       const messages = this.buildCallTranscriptMessages();
       if (!messages.length) return;
+      this.callTranscriptDetailSaved = true;
       try {
         await saveCallTranscriptDetail({
-          id: this.callQualityWorkOrderId,
+          callQualityWorkId: this.callQualityWorkOrderId,
           workOrderId: this.row.workOrderId,
           mediatorUserId: this.row.mediatorUserId,
           messages,
         });
       } catch (e) {
+        this.callTranscriptDetailSaved = false;
         console.error('保存通话转写详情失败:', e);
       }
     },
@@ -539,7 +529,6 @@ export default {
         const res = await SSEGetFromData({ content, type: 0 });
         if (res.code === 200 && nowFormId === this.formId) {
           this.diaputeForm = res.data;
-          await this.saveCallTranscriptDetailIfNeeded();
         }
       } catch (e) {
         console.error('解析调查表单失败:', e);
