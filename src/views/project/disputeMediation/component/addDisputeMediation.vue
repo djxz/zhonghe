@@ -2673,8 +2673,8 @@ export default {
     initSSE() {
       const nowFormId = this.formId;
       if (typeof (EventSource) !== "undefined" && this.run === false) {
-        // const source = new EventSource(`/asr/stream/?code=${this.extn}`);
-        const source = new EventSource(`http://192.168.50.18:8080/api/v1/asr/stream/?code=139`);
+        const source = new EventSource(`/asr/stream/?code=${this.extn}`);
+        // const source = new EventSource(`http://192.168.50.18:8080/api/v1/asr/stream/?code=139`);
         source.onmessage = (event) => {
           try {
             const resData = JSON.parse(event.data);
