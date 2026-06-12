@@ -149,6 +149,7 @@
 import {
   addMediationRecord,
   SSEGetFromData,
+  getAsrStreamUrl,
   saveCallQualityWorkOrder,
   saveCallTranscriptDetail,
   updateCallQualityWorkOrder,
@@ -185,11 +186,14 @@ export default {
       formId: null,
       minisize: false,
       callQualityWorkOrderId: null,
+      hadCallAttemptFlag: false,
       callAnsweredFlag: false,
       callEndHandled: false,
       callQualityRecordLinked: false,
       callStartPromise: null,
       callTranscriptDetailSaved: false,
+      pendingSseEnd: false,
+      phoneWasConnectedFlag: false,
     };
   },
   created() {
@@ -228,16 +232,30 @@ export default {
             console.log('SSE 连接已关闭');
           }
           this.callQualityWorkOrderId = null;
+          this.hadCallAttemptFlag = false;
           this.callAnsweredFlag = false;
           this.callEndHandled = false;
           this.callQualityRecordLinked = false;
           this.callStartPromise = null;
           this.callTranscriptDetailSaved = false;
+          this.pendingSseEnd = false;
+          this.phoneWasConnectedFlag = false;
         }
       }
       if (nVal) {
         this.$nextTick(() => this.$refs.mediationRecordForm.refreshTime())
       }
+    },
+    '$store.state.settings.callInfo.data': {
+      handler(data) {
+        if (data && data.state === 'acw' && this.isMediationCallSessionActive()) {
+          if (this.phoneWasConnectedFlag || this.isCallAnswered()) {
+            this.triggerCallEndOnHangUp('acw');
+          }
+        }
+        this.trackCallAttemptFromPhoneState(data);
+      },
+      deep: true,
     },
   },
   methods: {
@@ -249,11 +267,14 @@ export default {
         this.formData.workOrderId = row.workOrderId;
         this.formData.participant = row.mediatorName + ',' + row.assistantName;
         this.callQualityWorkOrderId = null;
+        this.hadCallAttemptFlag = false;
         this.callAnsweredFlag = false;
         this.callEndHandled = false;
         this.callQualityRecordLinked = false;
         this.callStartPromise = null;
         this.callTranscriptDetailSaved = false;
+        this.pendingSseEnd = false;
+        this.phoneWasConnectedFlag = false;
       }
       this.dialogVisible = true;
     },
@@ -293,12 +314,14 @@ export default {
           return false;
         }
         this.btnLoading = true;
-        await this.finalizeCallOnSubmitIfNeeded();
+        if (this.isCallAnswered()) {
+          await this.finalizeCallOnSubmitIfNeeded();
+        }
         const childrenFormData = this.$refs.mediationRecordForm.getFormData();
         childrenFormData.time = parseTime(childrenFormData.time, '{y}-{m}-{d} {h}:{i}:{s}');
         childrenFormData.workOrderId = this.formData.workOrderId;
         const res = await addMediationRecord(childrenFormData);
-        if (res.code === 200 && this.callQualityWorkOrderId != null && this.callAnsweredFlag) {
+        if (res.code === 200 && this.shouldRunCallQualityLogic()) {
           const recordData = res.data || {};
           await this.updateCallQualityWorkOrderForMediation({
             recordId: recordData.mediationRecordId,
@@ -334,8 +357,7 @@ export default {
       const nowFormId = this.formId;
 
       if (typeof (EventSource) !== "undefined" && this.run === false) {
-        const source = new EventSource(`/asr/stream/?code=${this.extn}`);
-        // const source = new EventSource(`http://192.168.50.18:8080/api/v1/asr/stream/?code=139`);
+        const source = new EventSource(getAsrStreamUrl(this.extn));
 
         source.onmessage = (event) => {
           try {
@@ -346,34 +368,21 @@ export default {
               }
               const list = [...this.sseList]
               const { direction, complete, data } = resData;
-              const now = Date.now();
-              if (direction === '2') {
-                const lastIndex = list.findLastIndex(item => item.role === "投诉人" && item.complete === 'false');
-                if (lastIndex !== -1) {
-                  list[lastIndex] = { ...list[lastIndex], role: "投诉人", message: data, complete };
-                } else {
-                  list[list.length] = { role: "投诉人", message: data, complete, timestamp: now };
-                }
-              } else {
-                const lastIndex = list.findLastIndex(item => item.role === "调解员" && item.complete === 'false');
-                if (lastIndex !== -1) {
-                  list[lastIndex] = { ...list[lastIndex], role: "调解员", message: data, complete };
-                } else {
-                  list[list.length] = { role: "调解员", message: data, complete, timestamp: now };
-                }
-              }
+              const role = String(direction) === '2' ? '投诉人' : '调解员';
+              this.appendSseRunMessage(list, role, data, complete);
               this.sseList = list
             } else if (resData.event === 'end') {
-              this.handleSseCallEnd();
+              this.pendingSseEnd = true;
+              this.tryFlushPendingCallEnd('sse-end');
               if (this.getDataInterval) {
                 clearInterval(this.getDataInterval);
-                this.getDataInterval = null
-                source.close();
-                if (this.completedCount() >= 2) {
-                  this.fetchMediationFormFromSSE(this.sseList.filter(d => d.complete), nowFormId);
-                } else {
-                  this.initSSE();
-                }
+                this.getDataInterval = null;
+              }
+              source.close();
+              if (this.completedCount() >= 2) {
+                this.fetchMediationFormFromSSE(this.sseList.filter(d => d.complete), nowFormId);
+              } else if (this.run === false) {
+                this.initSSE();
               }
             }
           } catch (error) {
@@ -408,38 +417,106 @@ export default {
     isMediationCallSessionActive() {
       return this.dialogVisible || this.minisize;
     },
-    /** ASR 首次 run：通话接通，创建质检工单 */
-    handleSseCallStart() {
+    /** 话务状态：弹框期间是否发起/接入过通话（含拨号中、振铃、未接听） */
+    trackCallAttemptFromPhoneState(data) {
+      if (!this.isMediationCallSessionActive()) return;
+      if (this.isCallActivityData(data)) {
+        this.hadCallAttemptFlag = true;
+        if (this.isPhoneCallAnswered(data)) {
+          this.phoneWasConnectedFlag = true;
+          this.ensureCallAnsweredSession('phone-busy');
+        }
+      }
+    },
+    isCallActivityData(data) {
+      return !!(data && data.state === 'busy');
+    },
+    /** 话务侧双方已接听（与 CallOut 展示逻辑一致，不依赖 ASR run） */
+    isPhoneCallAnswered(data) {
+      if (!data || data.state !== 'busy') return false;
+      if (data.call_direction === 'outbound') {
+        return data.private_data === 'answered' && data.other_answered === true;
+      }
+      if (data.call_direction === 'inbound') {
+        return data.private_data === 'answered';
+      }
+      return false;
+    },
+    /** 弹框期间是否发起/接入过通话（含未接听） */
+    hadCallInSession() {
+      return this.hadCallAttemptFlag;
+    },
+    /** 弹框期间是否已接听（ASR 首次 run 表示双方接通） */
+    isCallAnswered() {
+      return this.callAnsweredFlag;
+    },
+    /** 是否应执行通话质检接口（已接听且质检工单已创建） */
+    shouldRunCallQualityLogic() {
+      return this.isCallAnswered() && this.callQualityWorkOrderId != null;
+    },
+    /** 话务挂机（acw）或 ASR end 到达时尝试立即执行挂断逻辑 */
+    triggerCallEndOnHangUp(source) {
+      this.pendingSseEnd = true;
+      this.tryFlushPendingCallEnd(source);
+    },
+    /** 已接听且质检工单就绪时执行挂断逻辑；否则保留 pending 待后续刷新 */
+    tryFlushPendingCallEnd(source) {
+      if (!this.pendingSseEnd) return;
+      if (!this.isMediationCallSessionActive() || !this.isCallAnswered()) return;
+      if (this.callEndHandled || this.callQualityRecordLinked) {
+        this.pendingSseEnd = false;
+        return;
+      }
+      this.pendingSseEnd = false;
+      this.handleSseCallEnd();
+    },
+    /** 标记已接听并创建质检工单（话务接听或 ASR run 均可触发） */
+    ensureCallAnsweredSession(source) {
       if (!this.isMediationCallSessionActive() || this.callAnsweredFlag) return;
+      this.hadCallAttemptFlag = true;
       this.callAnsweredFlag = true;
       this.callEndHandled = false;
       if (!this.callStartPromise) {
         this.callStartPromise = this.onCallStart().finally(() => {
           this.callStartPromise = null;
+          if (this.pendingSseEnd) {
+            this.tryFlushPendingCallEnd('call-start-done');
+          }
         });
       }
+      if (this.pendingSseEnd) {
+        this.tryFlushPendingCallEnd(source);
+      }
+    },
+    /** ASR 首次 run：通话接通，创建质检工单 */
+    handleSseCallStart() {
+      this.ensureCallAnsweredSession('sse-run');
     },
     /** ASR end：通话结束，保存转写并更新质检工单 */
     async handleSseCallEnd() {
-      if (!this.isMediationCallSessionActive()) return;
-      if (!this.callAnsweredFlag || this.callEndHandled || this.callQualityRecordLinked) return;
+      if (!this.isMediationCallSessionActive() || !this.isCallAnswered()) return;
+      if (this.callEndHandled || this.callQualityRecordLinked) return;
       if (this.callStartPromise) {
         await this.callStartPromise;
       }
       this.callEndHandled = true;
-      await this.saveCallTranscriptDetailOnCallEnd();
-      await this.onCallEnd();
+      void Promise.all([
+        this.saveCallTranscriptDetailOnCallEnd(),
+        this.onCallEnd({ isHangUp: true }),
+      ]);
     },
     /** 提交前若通话未正常结束，补调结束接口 */
     async finalizeCallOnSubmitIfNeeded() {
+      if (!this.isCallAnswered()) return;
       if (this.callStartPromise) {
         await this.callStartPromise;
       }
-      if (!this.callAnsweredFlag || this.callEndHandled || this.callQualityRecordLinked) return;
+      if (this.callEndHandled || this.callQualityRecordLinked) return;
       this.callEndHandled = true;
       await this.onCallEnd();
     },
     async onCallStart() {
+      if (!this.isCallAnswered()) return;
       try {
         const res = await saveCallQualityWorkOrder({
           workOrderId: this.row.workOrderId,
@@ -457,24 +534,46 @@ export default {
       }
     },
     /** 更新通话质检工单（仅已接听且有工单 id 时调用） */
-    async updateCallQualityWorkOrderForMediation({ recordId = '', recordTime = '' } = {}) {
+    async updateCallQualityWorkOrderForMediation({ recordId = '', recordTime = '', isHangUp = false } = {}) {
+      if (!this.shouldRunCallQualityLogic()) return;
       const id = this.callQualityWorkOrderId;
-      if (id == null || !this.callAnsweredFlag) return;
       try {
-        await updateCallQualityWorkOrder({
+        const payload = {
           id,
           mediatorUserId: this.row.mediatorUserId,
           recordType: 'mediationRecord',
           recordId: recordId != null ? String(recordId) : '',
           recordTime: recordTime != null ? String(recordTime) : '',
-        });
+        };
+        if (isHangUp) {
+          payload.callEndFlag = '10';
+        }
+        await updateCallQualityWorkOrder(payload);
       } catch (e) {
         console.error('更新通话质检工单失败:', e);
       }
     },
-    async onCallEnd() {
-      if (this.callQualityWorkOrderId == null || this.callQualityRecordLinked) return;
-      await this.updateCallQualityWorkOrderForMediation({ recordId: '', recordTime: '' });
+    async onCallEnd({ isHangUp = false } = {}) {
+      if (!this.shouldRunCallQualityLogic() || this.callQualityRecordLinked) return;
+      await this.updateCallQualityWorkOrderForMediation({ recordId: '', recordTime: '', isHangUp });
+    },
+    isMessageComplete(complete) {
+      return complete === true || complete === 'true';
+    },
+    /** 追加 ASR run 消息（未完成条目续写，已完成则新开一条并记录时间） */
+    appendSseRunMessage(list, role, message, complete) {
+      const now = Date.now();
+      let lastIndex = list.findLastIndex(
+        item => item.role === role && !this.isMessageComplete(item.complete)
+      );
+      if (lastIndex !== -1 && list.slice(lastIndex + 1).some(item => item.role !== role)) {
+        lastIndex = -1;
+      }
+      if (lastIndex !== -1) {
+        list[lastIndex] = { ...list[lastIndex], role, message, complete };
+      } else {
+        list.push({ role, message, complete, timestamp: now });
+      }
     },
     getCompletedSseContent() {
       return this.sseList.filter(d => d && (d.complete === true || d.complete === 'true'));
@@ -500,7 +599,7 @@ export default {
     },
     /** 通话结束（ASR end）时保存转写，仅调用一次 */
     async saveCallTranscriptDetailOnCallEnd() {
-      if (this.callTranscriptDetailSaved || !this.callAnsweredFlag || this.callQualityWorkOrderId == null) return;
+      if (!this.shouldRunCallQualityLogic() || this.callTranscriptDetailSaved) return;
       const messages = this.buildCallTranscriptMessages();
       if (!messages.length) return;
       this.callTranscriptDetailSaved = true;

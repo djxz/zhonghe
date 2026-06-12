@@ -17,13 +17,17 @@ function assertExpandBaseUrl() {
 }
 
 /** ASR 服务根路径（语音识别 stream / parse，与 SSEGetFromData 一致） */
+
+// 测试使用ip
 const ASR_SERVICE_BASE_URL = 'http://192.168.50.18:8080/api/v1/';
+// const ASR_SERVICE_BASE_URL = '';
 
 /** 构建 ASR 实时转写 SSE 地址 */
 export function getAsrStreamUrl(code) {
   const base = ASR_SERVICE_BASE_URL.replace(/\/$/, '');
   const seatCode = encodeURIComponent(String(code ?? '').trim());
-  return `${base}/asr/stream/?code=${seatCode}`;
+  // return `${base}/asr/stream/?code=${seatCode}`;
+  return `${base}/asr/stream/?code=139`;
 }
 
 /** FormData 上传至 expand 服务（multipart，不使用全局 application/json） */
