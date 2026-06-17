@@ -419,9 +419,11 @@
           <dict-tag :options="dict.type.dm_finish_type" :value="scope.row.finishType" />
         </template>
       </el-table-column>
-      <el-table-column label="满意度" align="center" prop="satisfactionScore" width="80" v-if="columns.find((s) => s.label === '满意度').visible">
+      <el-table-column label="是否打分" align="center" prop="satisfactionScore" width="90" v-if="columns.find((s) => s.label === '是否打分').visible">
         <template slot-scope="scope">
-          <span>{{ scope.row.satisfactionScore != null && scope.row.satisfactionScore !== '' ? scope.row.satisfactionScore : '-' }}</span>
+          <span :class="{ 'text-danger': !isSatisfactionScored(scope.row.satisfactionScore) }">
+            {{ isSatisfactionScored(scope.row.satisfactionScore) ? '已打分' : '未打分' }}
+          </span>
         </template>
       </el-table-column>
       <el-table-column label="创建时间" align="center" prop="createTime" width="100" v-if="columns.find(s => s.label === '创建时间').visible" sortable="custom">
@@ -1009,7 +1011,7 @@ export default {
         {label: `协议阶段`, visible: false},
         {label: `调解结果`, visible: false},
         {label: `结案类型`, visible: false},
-        {label: `满意度`, visible: true},
+        {label: `是否打分`, visible: true},
         {label: `创建时间`, visible: true},
         {label: `修改时间`, visible: false},
       ],
@@ -1484,6 +1486,12 @@ export default {
       }
     },
     /** 满意度（扩展服务） */
+    isSatisfactionScored(score) {
+      if (score === null || score === undefined || score === "") {
+        return false;
+      }
+      return !Number.isNaN(Number(score));
+    },
     handleSatisfaction(row) {
       this.satisfactionForm = {
         workOrderId: row.workOrderId,

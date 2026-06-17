@@ -31,7 +31,6 @@
               <el-select
                 v-model="form.markCaseType"
                 placeholder="请选择案件类型"
-                clearable
                 style="width: 100%"
               >
                 <el-option
@@ -1353,6 +1352,9 @@ export default {
         // acceptStatus: [
         //   { required: true, message: '受理状态为必填项', trigger: 'change' },
         // ],
+        markCaseType: [
+          { required: true, message: "案件类型为必填项", trigger: "change" },
+        ],
       },
       disabled: false,
       // 常量
@@ -1588,6 +1590,7 @@ export default {
         createTime: null,
         updateId: null,
         updateTime: null,
+        markCaseType: "20",
       };
       this.resetForm("form");
       if (
@@ -1619,7 +1622,7 @@ export default {
     },
     open(row) {
       this.reset();
-      this.form = { ...row };
+      this.form = { ...row, markCaseType: "20" };
       // 法院渠道工单，修改时金融机构是否接受调解必填
       if (DM_ENTRY_CHANNEL.COURT.includes(row.entryChannel) && DM_STATUS.DM_STATUS2 === row.status && row.assistantUserId && !this.form.deptAcceptMediate) {
         this.form.deptAcceptMediate = SYS_YES_NO.sys_yes;
@@ -1695,6 +1698,8 @@ export default {
         .then((res) => {
           if (res.data != null && res.data.markCaseType != null && res.data.markCaseType !== "") {
             this.$set(this.form, "markCaseType", String(res.data.markCaseType));
+          } else {
+            this.$set(this.form, "markCaseType", "20");
           }
         })
         .catch(() => {});
