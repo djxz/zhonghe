@@ -937,12 +937,17 @@ export default {
       };
     },
     open(row) {
-      this.form = { ...row };
+      this.form = {
+        ...row,
+        markCaseType: row.markCaseType || "20",
+      };
       this.visible = true;
       getDisputeMediationExpandInfo(row.workOrderId)
         .then((res) => {
           if (res.data != null && res.data.markCaseType != null && res.data.markCaseType !== "") {
             this.$set(this.form, "markCaseType", String(res.data.markCaseType));
+          } else {
+            this.$set(this.form, "markCaseType", "20");
           }
           if (res.data != null && res.data.email != null && res.data.email !== "") {
             this.$set(this.form, "email", String(res.data.email));

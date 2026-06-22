@@ -22,6 +22,15 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <el-form-item label="案件分类" prop="markCaseType">
+              <el-select v-model="form.markCaseType" placeholder="请选择案件分类" style="width: 100%">
+                <el-option v-for="(label, val) in MARK_CASE_TYPE_LABEL" :key="val" :label="label" :value="val" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="12">
             <el-form-item label="渠道类型" prop="channelType">
               <el-select v-model="form.channelType" :disabled="disabled" placeholder="" clearable style="width: 100%"
                 :rules="disabled ? [] : [{ required: true, message: '渠道类型为必填项', trigger: 'change' }]">
@@ -40,7 +49,7 @@
               :rules="disabled ? [] : [{ required: true, message: '是否消费者本人为必填项', trigger: 'change' }]">
               <el-radio-group v-model="form.isSelf" :disabled="disabled">
                 <el-radio v-for="dict in dict.type.sys_yes_no" :key="dict.value" :label="dict.value">{{ dict.label
-                  }}</el-radio>
+                }}</el-radio>
               </el-radio-group>
             </el-form-item>
           </el-col>
@@ -954,6 +963,9 @@ export default {
         // acceptStatus: [
         //   { required: true, message: '受理状态为必填项', trigger: 'change' },
         // ],
+        markCaseType: [
+          { required: true, message: "案件类型为必填项", trigger: "change" },
+        ],
       },
       disabled: false,
       // 常量
@@ -1191,6 +1203,7 @@ export default {
         createTime: null,
         updateId: null,
         updateTime: null,
+        markCaseType: "20",
         agreedReductionAmount: null,
         consumerIdentityType: null,
         identityType: null,
@@ -1234,7 +1247,7 @@ export default {
     },
     open(row) {
       this.reset();
-      this.form = { ...row };
+      this.form = { ...row, markCaseType: "20" };
       // 法院渠道工单，修改时金融机构是否接受调解必填
       if (DM_ENTRY_CHANNEL.COURT.includes(row.entryChannel) && DM_STATUS.DM_STATUS2 === row.status && row.assistantUserId && !this.form.deptAcceptMediate) {
         this.form.deptAcceptMediate = SYS_YES_NO.sys_yes;
@@ -1310,6 +1323,8 @@ export default {
         .then((res) => {
           if (res.data != null && res.data.markCaseType != null && res.data.markCaseType !== "") {
             this.$set(this.form, "markCaseType", String(res.data.markCaseType));
+          } else {
+            this.$set(this.form, "markCaseType", "20");
           }
           if (res.data != null && res.data.email != null && res.data.email !== "") {
             this.$set(this.form, "email", String(res.data.email));

@@ -406,11 +406,12 @@
           <dict-tag :options="dict.type.dm_finish_type" :value="scope.row.finishType" />
         </template>
       </el-table-column>
-      <el-table-column label="满意度" align="center" prop="satisfactionScore" width="80"
-        v-if="columns.find((s) => s.label === '满意度').visible">
+      <el-table-column label="是否打分" align="center" prop="satisfactionScore" width="90"
+        v-if="columns.find((s) => s.label === '是否打分').visible">
         <template slot-scope="scope">
-          <span>{{ scope.row.satisfactionScore != null && scope.row.satisfactionScore !== '' ?
-            scope.row.satisfactionScore : '-' }}</span>
+          <span :class="{ 'text-danger': !isSatisfactionScored(scope.row.satisfactionScore) }">
+            {{ isSatisfactionScored(scope.row.satisfactionScore) ? '已打分' : '未打分' }}
+          </span>
         </template>
       </el-table-column>
       <el-table-column label="创建时间" align="center" prop="createTime" width="100"
@@ -460,7 +461,7 @@
                       DM_ENTRY_CHANNEL.COURT.includes(row.entryChannel) ? "修改工单开始调解" : "修改工单" }}</el-dropdown-item>
                 <el-dropdown-item command="editAssistant" icon="el-icon-s-custom"
                   v-if="$store.getters.userInfo.isDMMediator && !isApproval(row) && $store.getters.userInfo.userId === row.mediatorUserId && [DM_STATUS.DM_STATUS2, DM_STATUS.DM_STATUS3, DM_STATUS.DM_STATUS4].includes(row.status)">{{
-                    row.assistantUserId ?'修改助理调解员':'选择助理调解员' }}</el-dropdown-item>
+                    row.assistantUserId ? '修改助理调解员' : '选择助理调解员' }}</el-dropdown-item>
                 <el-dropdown-item command="editMediator" icon="el-icon-s-custom"
                   v-if="$store.getters.userInfo.isDMMediatorChanger && (DM_STATUS.DM_STATUS2 === row.status || DM_STATUS.DM_STATUS5 === row.status) && !row.assistantUserId">修改调解员</el-dropdown-item>
                 <el-dropdown-item command="editDept" icon="el-icon-office-building"
@@ -490,7 +491,7 @@
             {{ row.videoAuditStatus.split(',').includes(DM_VIDEO_AUDIT_STATUS.STATUS1) &&
               $store.getters.userInfo.isDMVideoAuditor1 ||
               row.videoAuditStatus.split(',').includes(DM_VIDEO_AUDIT_STATUS.STATUS2) &&
-              $store.getters.userInfo.isDMVideoAuditor2 ? "录像审核" : "录像审核记录"}}
+              $store.getters.userInfo.isDMVideoAuditor2 ? "录像审核" : "录像审核记录" }}
           </el-button>
 
           <el-button size="mini" type="text" icon="el-icon-edit" @click="handleReception(row)"
@@ -645,7 +646,7 @@
               <el-button size="mini" type="text" icon="el-icon-document-checked" @click="handleArchiveApply(row)"
                 :disabled="DM_ARCHIVE_STATUS.apply === row.archiveStatus">{{ DM_ARCHIVE_STATUS.apply ===
                   row.archiveStatus ?
-                "已提交归档" : "提交归档"}}</el-button>
+                  "已提交归档" : "提交归档" }}</el-button>
             </el-badge>
           </el-tooltip>
           <el-button size="mini" type="text" icon="el-icon-folder-checked" @click="handleArchive(row)"
@@ -1050,7 +1051,7 @@ export default {
         { label: `协议阶段`, visible: false },
         { label: `调解结果`, visible: false },
         { label: `结案类型`, visible: false },
-        { label: `满意度`, visible: true },
+        { label: `是否打分`, visible: true },
         { label: `创建时间`, visible: true },
         { label: `修改时间`, visible: false },
       ],
@@ -1525,6 +1526,12 @@ export default {
       }
     },
     /** 满意度（扩展服务） */
+    isSatisfactionScored(score) {
+      if (score === null || score === undefined || score === "") {
+        return false;
+      }
+      return !Number.isNaN(Number(score));
+    },
     handleSatisfaction(row) {
       this.satisfactionForm = {
         workOrderId: row.workOrderId,
