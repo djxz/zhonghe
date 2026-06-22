@@ -2,23 +2,24 @@
   <div>
     <el-dialog :title="title" :visible.sync="dialogVisible" :close-on-click-modal="false" @close="cancel" width="800px">
       <div v-if="tabHeaderList.length > 0">
-        <el-tabs v-model="activate" @tab-click="handleTab" tab-position="left" style="height: 550px" :closable="row.status === DM_STATUS.DM_STATUS10 && isDMMediator()" @edit="handleTabsEdit">
+        <el-tabs v-model="activate" @tab-click="handleTab" tab-position="left" style="height: 550px"
+          :closable="row.status === DM_STATUS.DM_STATUS10 && isDMMediator()" @edit="handleTabsEdit">
           <el-tab-pane v-for="(item, index) in tabHeaderList" :key="item.id" :label="item.time" :name="item.id">
             <div style="height: 550px">
-              <DetailForm ref="callbackDetailFormRef" v-if="activate === item.id" @success="getList"/>
+              <DetailForm ref="callbackDetailFormRef" v-if="activate === item.id" @success="getList" />
             </div>
           </el-tab-pane>
         </el-tabs>
       </div>
 
-      <el-empty description="暂无记录" v-else/>
+      <el-empty description="暂无记录" v-else />
     </el-dialog>
   </div>
 </template>
 
 <script>
 /** api */
-import {getDisputeMediation, deleteReturnVisit} from '@/api/project/disputeMediation';
+import { getDisputeMediation, deleteReturnVisit, getReturnVisitExpandInfo } from '@/api/project/disputeMediation';
 /** components */
 import DetailForm from './detailForm.vue';
 import { DM_STATUS } from '@/views/constant/CommonConstant'
@@ -26,7 +27,7 @@ import { DM_STATUS } from '@/views/constant/CommonConstant'
 export default {
   name: '',
   props: ['title'],
-  components: {DetailForm},
+  components: { DetailForm },
   data() {
     return {
       dialogVisible: false,
@@ -111,10 +112,19 @@ export default {
     /**获取调解记录 */
     getList() {
       getDisputeMediation(this.workOrderId)
-        .then(res => {
+        .then(async res => {
           this.row = res.data;
           this.dataList = res.data.dmReturnVisitList;
           if (this.dataList.length > 0) {
+            this.dataList = await Promise.all(
+              this.dataList.map(async (item) => {
+                const addList = await this.getAdd(item.returnVisitId);
+                return {
+                  ...item,
+                  ...addList,
+                };
+              })
+            );
             this.tabHeaderList = this.dataList.map(item => ({
               id: item.returnVisitId.toString(),
               time: item.time
@@ -128,6 +138,22 @@ export default {
             this.tabHeaderList = [];
           }
         })
+    },
+    async getAdd(returnVisitId) {
+      try {
+        const res = await getReturnVisitExpandInfo(returnVisitId);
+        if (res.code === 200 && res.data != null) {
+          return {
+            executionCompletedFlag: res.data.executionCompletedFlag,
+            financialCauseFailureFlag: res.data.financialCauseFailureFlag,
+            executionTime: res.data.executionTime,
+          };
+        }
+        return null;
+      } catch (e) {
+        console.error('获取调解记录扩展信息失败:', e);
+        return null;
+      }
     },
     // 校验工单调解员
     isDMMediator() {

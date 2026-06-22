@@ -2,7 +2,7 @@
   <div>
     <el-dialog :title="title" :visible.sync="dialogVisible" :close-on-click-modal="false" @close="cancel" width="600px">
       <div style="padding: 0 20px">
-        <record-form ref="callBackRecordForm" :initial-data="formData" :row="row"/>
+        <record-form ref="callBackRecordForm" :initial-data="formData" :row="row" />
       </div>
 
       <div slot="footer" class="dialog-footer">
@@ -14,8 +14,8 @@
 </template>
 
 <script>
-import {addReturnVisit} from '@/api/project/disputeMediation';
-import {parseTime} from '@/utils/ruoyi';
+import { addReturnVisit, saveOrUpdateReturnVisitExpand } from '@/api/project/disputeMediation';
+import { parseTime } from '@/utils/ruoyi';
 import recordForm from './formInfo.vue';
 
 export default {
@@ -40,6 +40,7 @@ export default {
   },
   methods: {
     open(row) {
+      console.log('🚀 ~ row ~ :', row)
       this.row = row;
       this.formData.workOrderId = row.workOrderId;
       this.dialogVisible = true;
@@ -66,7 +67,21 @@ export default {
         this.btnLoading = true;
         const childrenFormData = this.$refs.callBackRecordForm.getFormData();
         childrenFormData.time = parseTime(childrenFormData.time, '{y}-{m}-{d} {h}:{i}:{s}');
-        const res = await addReturnVisit(childrenFormData);
+        const { executionCompletedFlag, financialCauseFailureFlag, executionTime, ...restChildrenFormData } = childrenFormData
+
+
+        const res = await addReturnVisit(restChildrenFormData);
+        if (res.code === 200) {
+          await saveOrUpdateReturnVisitExpand({
+            returnVisitId: res.data.returnVisitId,
+            workOrderId: this.row.workOrderId,
+            manageDeptId: this.row.manageDeptId,
+            executionCompletedFlag,
+            financialCauseFailureFlag,
+            executionTime,
+            mediatorUserId: this.row.mediatorUserId
+          })
+        }
         this.$modal.msgSuccess(res.msg);
         this.$emit('callback', 'b', this.row);
         this.cancel();

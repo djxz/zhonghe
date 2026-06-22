@@ -277,3 +277,9 @@ export const DM_VIDEO_AUDIT_STATUS = {
   STATUS12: "12", // 部门长驳回
   STATUS20: "20", // 通过
 };
+// 自然人/法人
+export const DM_IDENTITY_TYPE = {
+  NATURAL: "0", // 自然人
+  LEGAL: "1", // 法人
+};
+

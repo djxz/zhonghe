@@ -1,7 +1,7 @@
 <!-- 新增纠纷业务工单对话框 -->
 <template xmlns="http://www.w3.org/1999/html">
-  <el-dialog ref="disputeDialog" :visible.sync="visible" width="85%" append-to-body :close-on-click-modal="false" :show-close="false"
-    class="dispute-dialog" :close-on-press-escape="false">
+  <el-dialog ref="disputeDialog" :visible.sync="visible" width="85%" append-to-body :close-on-click-modal="false"
+    :show-close="false" class="dispute-dialog" :close-on-press-escape="false">
     <el-row class="add-dispute" :gutter="3">
       <el-col ref="dialogLeft" class="dialog-left" :span="14">
         <div class="dialog-title">
@@ -27,6 +27,14 @@
                   <!--              </el-select>-->
                 </el-form-item>
               </el-col>
+              <el-col :span="12" v-if="$store.getters.userInfo.isDMEntryClerk">
+                <el-form-item label="渠道类型" prop="channelType">
+                  <el-select v-model="form.channelType" placeholder="请选择渠道类型" clearable style="width: 100%">
+                    <el-option v-for="dict in dict.type.dm_channel_type" :key="dict.value" :label="dict.label"
+                      :value="dict.value"></el-option>
+                  </el-select>
+                </el-form-item>
+              </el-col>
               <el-col :span="12" v-if="DM_ENTRY_CHANNEL.COURT.includes(this.form.entryChannel)">
                 <el-form-item label="调解员" prop="mediatorUserId">
                   <el-select v-model="form.mediatorUserId" placeholder="请选择调解员" clearable style="width: 100%">
@@ -39,31 +47,17 @@
             <el-row v-if="form.entryChannel && form.entryChannel !== DM_ENTRY_CHANNEL.E">
               <el-col :span="24">
                 <el-form-item label="图片/pdf信息识别">
-                  <el-upload
-                    ref="ocrUpload"
-                    action=""
-                    accept="image/*,.pdf,application/pdf"
-                    multiple
-                    :show-file-list="false"
-                    :limit="5"
-                    :http-request="handleOcrUpload"
-                    :before-upload="beforeOcrUpload"
-                    :on-exceed="handleOcrExceed"
-                    :auto-upload="true"
-                  >
+                  <el-upload ref="ocrUpload" action="" accept="image/*,.pdf,application/pdf" multiple
+                    :show-file-list="false" :limit="5" :http-request="handleOcrUpload" :before-upload="beforeOcrUpload"
+                    :on-exceed="handleOcrExceed" :auto-upload="true">
                     <el-button size="mini" type="primary">上传图片/PDF</el-button>
                     <span slot="tip" class="el-upload__tip" style="margin-left: 12px">
                       支持一次选择多张图片或 PDF，批量识别工单相关信息
                     </span>
                   </el-upload>
                   <ul v-if="ocrRecognizeRecords.length" class="recognize-records-list">
-                    <li
-                      v-for="(record, index) in ocrRecognizeRecords"
-                      :key="record.id"
-                      class="recognize-record-item"
-                      :class="{ active: activeOcrRecordId === record.id }"
-                      @click="applyOcrRecord(record)"
-                    >
+                    <li v-for="(record, index) in ocrRecognizeRecords" :key="record.id" class="recognize-record-item"
+                      :class="{ active: activeOcrRecordId === record.id }" @click="applyOcrRecord(record)">
                       <span class="record-label">{{ record.label }}</span>
                       <span class="record-time">{{ record.time }}</span>
                       <el-button type="text" class="record-delete" @click.stop="removeOcrRecord(index)">删除</el-button>
@@ -75,30 +69,18 @@
             <el-row v-if="form.entryChannel && form.entryChannel === DM_ENTRY_CHANNEL.D">
               <el-col :span="24">
                 <el-form-item label="表格信息识别">
-                  <el-upload
-                    ref="excelUpload"
-                    action=""
+                  <el-upload ref="excelUpload" action=""
                     accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                    :show-file-list="false"
-                    :limit="1"
-                    :http-request="handleExcelUpload"
-                    :before-upload="beforeExcelUpload"
-                    :on-exceed="handleExcelExceed"
-                    :auto-upload="true"
-                  >
+                    :show-file-list="false" :limit="1" :http-request="handleExcelUpload"
+                    :before-upload="beforeExcelUpload" :on-exceed="handleExcelExceed" :auto-upload="true">
                     <el-button size="mini" type="primary">上传Excel</el-button>
                     <span slot="tip" class="el-upload__tip" style="margin-left: 12px">
                       仅支持 Excel 文件，识别后自动填入左侧表单
                     </span>
                   </el-upload>
                   <ul v-if="excelRecognizeRecords.length" class="recognize-records-list">
-                    <li
-                      v-for="(record, index) in excelRecognizeRecords"
-                      :key="record.id"
-                      class="recognize-record-item"
-                      :class="{ active: activeExcelRecordId === record.id }"
-                      @click="applyExcelRecord(record)"
-                    >
+                    <li v-for="(record, index) in excelRecognizeRecords" :key="record.id" class="recognize-record-item"
+                      :class="{ active: activeExcelRecordId === record.id }" @click="applyExcelRecord(record)">
                       <span class="record-label">{{ record.label }}</span>
                       <span class="record-time">{{ record.time }}</span>
                       <el-button type="text" class="record-delete" @click.stop="removeExcelRecord(index)">删除</el-button>
@@ -115,7 +97,7 @@
                 <el-form-item label="是否消费者本人" prop="isSelf">
                   <el-radio-group v-model="form.isSelf">
                     <el-radio v-for="dict in dict.type.sys_yes_no" :key="dict.value" :label="dict.value">{{ dict.label
-                    }}</el-radio>
+                      }}</el-radio>
                   </el-radio-group>
                 </el-form-item>
               </el-col>
@@ -161,9 +143,24 @@
           </div>
           <div>
             <div class="min_title">消费者信息</div>
+
+            <el-row v-if="$store.getters.userInfo.isDMEntryClerk">
+              <el-col :span="12">
+                <el-form-item label="消费者身份类型" prop="consumerIdentityType">
+                  <el-select v-model="form.consumerIdentityType" placeholder="请选择消费者身份类型" clearable style="width: 100%">
+                    <el-option v-for="dict in dict.type.dm_consumer_identity_type" :key="dict.value" :label="dict.label"
+                      :value="dict.value"></el-option>
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
             <el-row>
               <el-col :span="12">
-                <el-form-item label="消费者姓名" prop="name">
+                <el-form-item v-if="form.consumerIdentityType === DM_IDENTITY_TYPE.LEGAL" label="法人或非法人组织" prop="name"
+                  label-width="140px">
+                  <el-input v-model="form.name" placeholder="请输入法人或非法人组织" clearable maxlength="50" show-word-limit />
+                </el-form-item>
+                <el-form-item v-else label="消费者姓名" prop="name">
                   <el-input v-model="form.name" placeholder="请输入消费者姓名" clearable maxlength="50" show-word-limit />
                 </el-form-item>
               </el-col>
@@ -178,13 +175,23 @@
               <el-col :span="12">
                 <el-form-item label="证件类型" prop="certType">
                   <el-select v-model="form.certType" placeholder="请选择证件类型" clearable style="width: 100%">
-                    <el-option v-for="dict in dict.type.cert_type" :key="dict.value" :label="dict.label"
-                      :value="dict.value"></el-option>
+                    <!-- <el-option v-for="dict in dict.type.cert_type" :key="dict.value" :label="dict.label"
+                      :value="dict.value"></el-option> -->
+                    <el-option v-for="item in filteredCertTypeOptions" :key="item.value" :label="item.label"
+                      :value="item.value" />
                   </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="证件号码" prop="certNum" :rules="[
+                <el-form-item v-if="form.consumerIdentityType === DM_IDENTITY_TYPE.LEGAL" label="统一社会信用代码"
+                  prop="certNum" :rules="[
+                    { required: true, message: '统一社会信用代码为必填项', trigger: 'blur' },
+                  ]" label-width="140px">
+                  <el-input v-model="form.certNum" placeholder="请输入统一社会信用代码"
+                    :maxlength="this.validCertNumLength(this.form.certType)" show-word-limit clearable
+                    @input="cardNumChange" />
+                </el-form-item>
+                <el-form-item v-else label="证件号码" prop="certNum" :rules="[
                   { required: true, message: '消费者证件号码为必填项', trigger: 'blur' },
                   { validator: this.validCertNum(this.form.certType), trigger: 'blur' },
                 ]">
@@ -222,10 +229,33 @@
                 </el-form-item>
               </el-col>
             </el-row>
+            <el-row v-if="$store.getters.userInfo.isDMEntryClerk">
+              <el-col :span="12">
+                <el-form-item label="邮箱" prop="email">
+                  <el-input v-model="form.email" show-word-limit placeholder="请输入邮箱" clearable />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12" v-if="DEPT_TYPE.insuranceList.includes(form.deptType)">
+                <el-form-item label="身份类型" prop="identityType">
+                  <el-select v-model="form.identityType" placeholder="请选择身份类型" clearable style="width: 100%">
+                    <el-option v-for="dict in dict.type.dm_identity_type" :key="dict.value" :label="dict.label"
+                      :value="dict.value"></el-option>
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
             <el-row>
               <el-col :span="24">
                 <el-form-item label="单位或住址" prop="address">
                   <el-input v-model="form.address" type="textarea" placeholder="请输入单位或住址" clearable maxlength="50"
+                    show-word-limit :autosize="{ minRows: 1 }" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row>
+              <el-col :span="24">
+                <el-form-item label="备注" prop="remark">
+                  <el-input v-model="form.remark" type="textarea" placeholder="可填写多个当事人的信息" clearable maxlength="50"
                     show-word-limit :autosize="{ minRows: 1 }" />
                 </el-form-item>
               </el-col>
@@ -352,6 +382,7 @@
                     style="width: 100%" ref="businessType1Ref" />
                 </el-form-item>
               </el-col>
+
             </el-row>
             <el-row v-if="DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)">
               <el-col :span="12">
@@ -418,6 +449,45 @@
                     style="width: 100%">
                     <el-option v-for="dict in dict.type.dm_insurance_complaint_type" :key="dict.value"
                       :label="dict.label" :value="dict.value"></el-option>
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row>
+              <el-col :span="12">
+                <el-form-item label="金融服务发生地" prop="financialServiceArea" :rules="[{
+                  required: true, message: '金融服务发生地为必填项', trigger: 'change'
+                }]">
+                  <el-cascader ref="financialServiceAreaRef" v-model="form.financialServiceArea" :options="areaOptions"
+                    :props="{
+                      lazy: true,
+                      lazyLoad: (node, resolve) => {
+                        if (node.level === 0) {
+                          this.loadProvinces(node, resolve);
+                        } else {
+                          this.loadCities(node, resolve);
+                        }
+                      },
+                      value: 'value',
+                      label: 'label',
+                      children: 'children',
+                      emitPath: false,
+                      checkStrictly: false,
+                      multiple: false
+                    }" placeholder="请选择金融服务发生地" clearable style="width: 100%;" @change="handleAreaChange"
+                    @clear="resetAreaData" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12"
+                v-if="DEPT_TYPE.bankList.includes(this.form.deptType) || DEPT_TYPE.nonBankList.includes(this.form.deptType)">
+                <el-form-item label="产品/服务" prop="disputedProductType" :rules="[{
+                  required:
+                    DEPT_TYPE.bankList.includes(this.form.deptType) || DEPT_TYPE.nonBankList.includes(this.form.deptType),
+                  message: '产品/服务为必填项', trigger: 'change'
+                }]">
+                  <el-select v-model="form.disputedProductType" placeholder="请选择产品/服务" clearable style="width: 100%">
+                    <el-option v-for="dict in dict.type.dm_disputed_product_type" :key="dict.value" :label="dict.label"
+                      :value="dict.value"></el-option>
                   </el-select>
                 </el-form-item>
               </el-col>
@@ -731,7 +801,7 @@
                   <el-form-item label="是否消费者本人" prop="isSelf" label-width="200px">
                     <el-radio-group v-model="diaputeForm.isSelf">
                       <el-radio v-for="dict in dict.type.sys_yes_no" :key="dict.value" :label="dict.value">{{ dict.label
-                      }}</el-radio>
+                        }}</el-radio>
                     </el-radio-group>
                   </el-form-item>
                 </el-col>
@@ -784,23 +854,24 @@
               <div class="right-section-block">
                 <div class="region-title">*消费者信息</div>
                 <el-row class="line-row">
-                <el-col :span="12">
-                  <el-form-item label="消费者姓名" prop="name">
-                    <el-input v-model="diaputeForm.name" placeholder="请输入消费者姓名" maxlength="50" show-word-limit />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item label="联系方式" prop="phone">
-                    <el-input v-model="diaputeForm.phone" placeholder="请输入联系方式" type="tel" maxlength="11"
-                      show-word-limit />
-                  </el-form-item>
-                </el-col>
-              </el-row>
+                  <el-col :span="12">
+                    <el-form-item label="消费者姓名" prop="name">
+                      <el-input v-model="diaputeForm.name" placeholder="请输入消费者姓名" maxlength="50" show-word-limit />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                    <el-form-item label="联系方式" prop="phone">
+                      <el-input v-model="diaputeForm.phone" placeholder="请输入联系方式" type="tel" maxlength="11"
+                        show-word-limit />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
                 <div class="cert-column-fields">
+
                   <el-form-item label="证件类型" prop="certType">
                     <el-select v-model="diaputeForm.certType" placeholder="请选择证件类型" clearable>
-                      <el-option v-for="dict in dict.type.cert_type" :key="dict.value" :label="dict.label"
-                        :value="dict.value"></el-option>
+                      <el-option v-for="item in filteredCertTypeOptions" :key="item.value" :label="item.label"
+                        :value="item.value" />
                     </el-select>
                   </el-form-item>
                   <el-form-item label="证件号码" prop="certNum">
@@ -808,7 +879,7 @@
                       :maxlength="validCertNumLength(diaputeForm.certType)" show-word-limit clearable />
                   </el-form-item>
                 </div>
-              <!-- <el-row class="line-row">
+                <!-- <el-row class="line-row">
                 <el-col :span="12">
                   <el-form-item label="性别" prop="sex">
                     <el-select v-model="diaputeForm.sex" placeholder="请选择性别" clearable style="width: 100%">
@@ -824,28 +895,28 @@
                   </el-form-item>
                 </el-col>
               </el-row> -->
-              <el-row class="line-row">
-                <el-col :span="12">
-                  <el-form-item label="民族" prop="nation">
-                    <el-input v-model="diaputeForm.nation" maxlength="26" show-word-limit clearable
-                      placeholder="请输入民族" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item label="职业" prop="profession">
-                    <el-input v-model="diaputeForm.profession" maxlength="20" show-word-limit clearable
-                      placeholder="请输入职业" />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-              <el-row class="line-row">
-                <el-col :span="24">
-                  <el-form-item label="单位或住址" prop="address">
-                    <el-input v-model="diaputeForm.address" type="textarea" placeholder="请输入单位或住址" clearable
-                      maxlength="50" show-word-limit :autosize="{ minRows: 1 }" />
-                  </el-form-item>
-                </el-col>
-              </el-row>
+                <el-row class="line-row">
+                  <el-col :span="12">
+                    <el-form-item label="民族" prop="nation">
+                      <el-input v-model="diaputeForm.nation" maxlength="26" show-word-limit clearable
+                        placeholder="请输入民族" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                    <el-form-item label="职业" prop="profession">
+                      <el-input v-model="diaputeForm.profession" maxlength="20" show-word-limit clearable
+                        placeholder="请输入职业" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row class="line-row">
+                  <el-col :span="24">
+                    <el-form-item label="单位或住址" prop="address">
+                      <el-input v-model="diaputeForm.address" type="textarea" placeholder="请输入单位或住址" clearable
+                        maxlength="50" show-word-limit :autosize="{ minRows: 1 }" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
               </div>
             </div>
             <div>
@@ -863,19 +934,12 @@
               <el-row class="line-row">
                 <el-col :span="24">
                   <el-form-item label="纠纷发生日期" prop="disputeDate" class="dispute-date-form-item">
-                    <el-date-picker
-                      clearable
-                      v-model="diaputeForm.disputeDate"
-                      type="date"
-                      value-format="yyyy-MM-dd"
-                      placeholder="请选择纠纷发生日期"
-                      class="dispute-date-picker"
-                      :picker-options="{
+                    <el-date-picker clearable v-model="diaputeForm.disputeDate" type="date" value-format="yyyy-MM-dd"
+                      placeholder="请选择纠纷发生日期" class="dispute-date-picker" :picker-options="{
                         disabledDate(time) {
                           return time.getTime() > Date.now();
                         },
-                      }"
-                    />
+                      }" />
                   </el-form-item>
                 </el-col>
                 <!-- 暂时注释：机构所在地区
@@ -964,8 +1028,7 @@
                 </el-col>
                 <el-col :span="12" v-if="DM_ACCEPT_STATUS.reject === diaputeForm.acceptStatus">
                   <el-form-item label="不予受理原因" prop="rejectReason">
-                    <el-select v-model="diaputeForm.rejectReason" placeholder="请选择不予受理原因" clearable
-                      style="width: 100%">
+                    <el-select v-model="diaputeForm.rejectReason" placeholder="请选择不予受理原因" clearable style="width: 100%">
                       <el-option v-for="dict in dict.type.dm_reject_reason" :key="dict.value" :label="dict.label"
                         :value="dict.value"></el-option>
                     </el-select>
@@ -976,13 +1039,8 @@
           </el-form>
           <ul v-if="asrRecognizeRecords.length" class="recognize-records-list asr-records">
             <li class="recognize-records-title">识别记录</li>
-            <li
-              v-for="(record, index) in asrRecognizeRecords"
-              :key="record.id"
-              class="recognize-record-item"
-              :class="{ active: activeAsrRecordId === record.id }"
-              @click="applyAsrRecord(record)"
-            >
+            <li v-for="(record, index) in asrRecognizeRecords" :key="record.id" class="recognize-record-item"
+              :class="{ active: activeAsrRecordId === record.id }" @click="applyAsrRecord(record)">
               <span class="record-label">记录 {{ index + 1 }}</span>
               <span class="record-time">{{ record.time }}</span>
             </li>
@@ -1028,6 +1086,9 @@ import {
   saveCallQualityWorkOrder,
   saveCallTranscriptDetail,
   updateCallQualityWorkOrder,
+  getProvinces,
+  getCities,
+  saveOrUpdateDisputeMediationExpand
 } from "@/api/project/disputeMediation";
 import { uploadOcr } from "@/api/ocr";
 import Treeselect from "@riophae/vue-treeselect";
@@ -1039,6 +1100,7 @@ import {
   DM_ACCEPT_STATUS,
   DM_ENTRY_CHANNEL,
   CERT_TYPE,
+  DM_IDENTITY_TYPE
 } from "@/views/constant/CommonConstant.js";
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
@@ -1101,6 +1163,10 @@ export default {
     "dm_enforce_agreement_type",
     "dm_entry_channel",
     "dm_insurance_type",
+    "dm_channel_type",
+    "dm_consumer_identity_type",
+    "dm_identity_type",
+    "dm_disputed_product_type",
   ],
   props: ["deptOptions", "deptMap"],
   data() {
@@ -1113,6 +1179,9 @@ export default {
       rules: {
         entryChannel: [
           { required: true, message: '进件渠道为必填项', trigger: 'change' },
+        ],
+        channelType: [
+          { required: true, message: '渠道类型为必填项', trigger: 'change' },
         ],
         mediatorUserId: [
           { required: true, message: '调解员为必填项', trigger: 'change' },
@@ -1130,6 +1199,9 @@ export default {
         name: [
           { required: true, message: '消费者姓名为必填项', trigger: 'blur' },
         ],
+        consumerIdentityType: [
+          { required: true, message: '消费者身份类型为必填项', trigger: 'change' },
+        ],
         phone: [
           { required: true, message: '消费者联系方式为必填项', trigger: 'blur' },
           { validator: this.phoneRule, trigger: 'blur' },
@@ -1143,6 +1215,17 @@ export default {
         // ],
         sex: [
           { required: true, message: '消费者性别为必填项', trigger: 'change' },
+        ],
+        email: [
+          // { required: fa, message: '消费者邮箱为必填项', trigger: 'blur' },
+          {
+            pattern: /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
+            message: '请输入正确的邮箱格式',
+            trigger: 'blur'
+          }
+        ],
+        identityType: [
+          { required: true, message: '消费者身份类型为必填项', trigger: 'change' },
         ],
         age: [
           { required: true, message: '消费者年龄为必填项', trigger: 'blur' },
@@ -1249,6 +1332,7 @@ export default {
       DM_ACCEPT_STATUS: DM_ACCEPT_STATUS, // 纠纷业务受理状态
       DM_ENTRY_CHANNEL: DM_ENTRY_CHANNEL, // 纠纷业务进件渠道
       CERT_TYPE: CERT_TYPE, // 身份证类型,
+      DM_IDENTITY_TYPE: DM_IDENTITY_TYPE, // 消费者身份类型,
       // extn: this.$callWs.state.formData.ola_extn,
       extn: this.$store.getters.userInfo.seatNum ? this.$store.getters.userInfo.seatNum.toString().slice(5, 8) : '',
       diaputeForm: {},
@@ -1275,8 +1359,20 @@ export default {
       callQualityRecordLinked: false,
       callStartPromise: null,
       callTranscriptDetailSaved: false,
+      filteredCertTypeOptions: [], // 动态证件类型选项
+      // 消费者身份类型与证件类型的映射关系
+      certTypeMapping: {
+        // 个人 -> 身份证、护照、军警证、外国人永久居留证
+        '0': ['0', '1', '2', '3'],
+        // 企业/机构 -> 统一社会信用代码
+        '1': ['4'],
+        // 其他身份类型可根据需要配置
+      },
+      areaOptions: [], // 省市数据源
+
     };
   },
+
   watch: {
     // 初始化字典，用于层级选择器
     "dict.type.dept_type"(newV, oldV) {
@@ -1356,6 +1452,17 @@ export default {
       },
       deep: true,
     },
+    // 监听字典加载完成
+    'dict.type.cert_type'(newVal) {
+      this.filterCertTypeOptions(this.form.consumerIdentityType);
+    },
+    'form.consumerIdentityType': {
+      handler(newVal) {
+        this.filterCertTypeOptions(newVal);
+      },
+      immediate: true // 立即执行一次
+    },
+
   },
   created() {
   },
@@ -1677,7 +1784,7 @@ export default {
               this.appendAttachmentFile(body.fileName);
             }
           })
-          .catch(() => {});
+          .catch(() => { });
       });
     },
     removeExcelRecognizeAttachments() {
@@ -2397,6 +2504,18 @@ export default {
         createTime: null,
         updateId: null,
         updateTime: null,
+        consumerIdentityType: null,
+        identityType: null,
+        email: null,
+        disputedProductType: null,
+        channelType: null,
+        provinceCode: null,
+        provinceName: null,
+        cityCode: null,
+        cityName: null,
+        financialServiceArea: null,
+        remark: null,
+
       };
       this.resetForm("form");
       this.ocrRecognizeRecords = [];
@@ -2428,7 +2547,8 @@ export default {
         this.form.deptId = this.$store.getters.userInfo.dept.deptId;
         this.form.entryChannel = DM_ENTRY_CHANNEL.D;
         this.deptChange();
-      }
+      };
+
     },
     /** 转换机构数据结构 */
     normalizer(node) {
@@ -2470,7 +2590,7 @@ export default {
 1.1.1金额： 元（当事人诉求金额）
 1.1.2依据： 如客户诉求、双方合意、人文关怀等）
 1.2变更合同条款（调整还款/缴费计划、一次性结清减免、申请降低保额等）
-1.2.1原条款/计划：                
+1.2.1原条款/计划：
 1.2.2申请变更/调整为：                （当事人诉求）
 1.2.3理由：                （如客户诉求、还款困难等）
 1.3赔偿损失
@@ -2479,7 +2599,7 @@ export default {
 1.3.3计算依据：                （如中国人民银行发布的同期同类存款基准利率、客户诉求、双方合意、人文关怀等）
 1.4其他请求
 1.4.1请求类型：                （如其他服务及增值活动类、催收及征信异议、账户使用及管理等）
-1.4.2请求内容：                        
+1.4.2请求内容：
 二、纠纷事实与理由
 2.1合同/协议情况
 2.1.1□是□否签订相关合同/协议合同/协议名称:         （险种名称、业务名称、合同或协议名称等）
@@ -2526,6 +2646,9 @@ export default {
         });
       }
       this.visible = true;
+      this.$nextTick(() => {
+        this.initCertTypeOptions();
+      });
     },
     // 更新调解员禁用状态
     refreshMediator() {
@@ -2564,13 +2687,43 @@ export default {
         if (this.isCallAnswered()) {
           await this.finalizeCallOnSubmitIfNeeded();
         }
-        const response = await addDisputeMediation(this.form);
-        if (response.code === 200 && this.shouldRunCallQualityLogic()) {
+        const {
+          email,
+          identityType,
+          consumerIdentityType,
+          disputedProductType,
+          channelType,
+          financialServiceArea,
+          provinceCode,
+          provinceName,
+          cityCode,
+          cityName,
+          remark,
+          ...restForm
+        } = this.form;
+
+        const response = await addDisputeMediation(restForm);
+        if (response.code === 200) {
           const recordData = response.data || {};
-          await this.updateCallQualityWorkOrderForAddMediation({
-            isSubmit: true,
-            workOrderId: recordData.workOrderId,
-          });
+          await saveOrUpdateDisputeMediationExpand({
+            workOrderId: this.form.workOrderId || recordData.workOrderId,
+            email,
+            identityType,
+            consumerIdentityType,
+            disputedProductType,
+            channelType,
+            provinceCode,
+            provinceName,
+            cityCode,
+            cityName,
+            remark,
+          })
+          if (this.shouldRunCallQualityLogic()) {
+            await this.updateCallQualityWorkOrderForAddMediation({
+              isSubmit: true,
+              workOrderId: recordData.workOrderId,
+            });
+          }
           this.callQualityRecordLinked = true;
         }
         this.$modal.msgSuccess("新增成功");
@@ -2967,6 +3120,102 @@ export default {
         console.error('保存通话转写详情失败:', e);
       }
     },
+
+    filterCertTypeOptions(identityType) {
+      const allCertTypes = this.dict.type.cert_type || [];
+
+      if (!identityType || !this.certTypeMapping[identityType]) {
+        this.filteredCertTypeOptions = allCertTypes;
+        return;
+      }
+
+      const allowedValues = this.certTypeMapping[identityType];
+
+      this.filteredCertTypeOptions = allCertTypes.filter(item =>
+        allowedValues.includes(item.value)
+      )
+    },
+
+    // 初始化证件类型选项（在 open 或字典加载完成后调用）
+    initCertTypeOptions() {
+      this.filterCertTypeOptions(this.form.consumerIdentityType);
+    },
+
+    async loadProvinces(node, resolve) {
+      try {
+        const res = await getProvinces();
+        if (res.code === 200 && Array.isArray(res.data)) {
+          const provinces = res.data.map(item => ({
+            value: item.provinceCode,
+            label: item.provinceName,
+            provinceCode: item.provinceCode,
+            provinceName: item.provinceName,
+            leaf: false // 表示还有子级（市），虽然接口没说有区，但为了保险或未来扩展）
+          }));
+          resolve(provinces); // 异步回调，返回数据
+        } else {
+          resolve([]);
+        }
+      } catch (error) {
+        console.error('获取省份失败:', error);
+        resolve([]);
+      }
+    },
+
+    // 2. 加载城市数据（根据选中的省份加载市级）
+    async loadCities(node, resolve) {
+      const { value } = node; // 父节点的 value，即 provinceCode
+      try {
+        const res = await getCities(value);
+        if (res.code === 200 && Array.isArray(res.data)) {
+          const cities = res.data.map(item => ({
+            value: item.cityCode,
+            label: item.cityName,
+            provinceCode: item.provinceCode,
+            cityCode: item.cityCode,
+            cityName: item.cityName,
+            leaf: true // 假设只到市级，没有区级
+          }));
+          resolve(cities);
+        } else {
+          resolve([]);
+        }
+      } catch (error) {
+        console.error('获取城市失败:', error);
+        resolve([]);
+      }
+    },
+
+    // 3. 处理级联选择器的 change 事件
+    handleAreaChange() {
+      const checkedNodes =
+        this.$refs.financialServiceAreaRef?.getCheckedNodes?.() || [];
+      if (!checkedNodes.length) {
+        this.resetAreaData();
+        return;
+      }
+
+      const cityNode = checkedNodes[0];
+
+      if (!cityNode.parent) {
+        this.resetAreaData();
+        return;
+      }
+
+      const provinceNode = cityNode.parent;
+
+      this.form.provinceCode = provinceNode.data.provinceCode;
+      this.form.provinceName = provinceNode.data.provinceName;
+      this.form.cityCode = cityNode.data.cityCode;
+      this.form.cityName = cityNode.data.cityName;
+    },
+    // 4. 重置选择器数据（比如在 open 或 reset 方法里调用）
+    resetAreaData() {
+      this.form.provinceCode = null;
+      this.form.provinceName = null;
+      this.form.cityCode = null;
+      this.form.cityName = null;
+    }
   },
 };
 </script>

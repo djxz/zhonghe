@@ -6,25 +6,29 @@
         <el-row>
           <el-col :span="6">
             <el-form-item label="消费者姓名" prop="name">
-              <el-input v-model="queryParams.name" placeholder="请输入消费者姓名" clearable @keyup.enter.native="handleQuery" style="width: 100%" />
+              <el-input v-model="queryParams.name" placeholder="请输入消费者姓名" clearable @keyup.enter.native="handleQuery"
+                style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="6">
             <el-form-item label="机构名称" prop="deptId">
-              <treeselect v-model="queryParams.deptId" :options="deptOptions" :normalizer="normalizer" placeholder="请选择机构" style="width: 100%" />
+              <treeselect v-model="queryParams.deptId" :options="deptOptions" :normalizer="normalizer"
+                placeholder="请选择机构" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="6">
             <el-form-item label="工单状态" prop="status">
               <el-select v-model="queryParams.status" placeholder="请选择工单状态" clearable style="width: 100%">
-                <el-option v-for="dict in dict.type.dm_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+                <el-option v-for="dict in dict.type.dm_status" :key="dict.value" :label="dict.label"
+                  :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="6">
             <el-form-item label="结案类型" prop="finishType">
               <el-select v-model="queryParams.finishType" placeholder="请选择结案类型" clearable style="width: 100%">
-                <el-option v-for="dict in dict.type.dm_finish_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+                <el-option v-for="dict in dict.type.dm_finish_type" :key="dict.value" :label="dict.label"
+                  :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -34,14 +38,9 @@
         <el-row>
           <el-col :span="6">
             <el-form-item label="进件渠道" prop="entryChannel">
-              <el-cascader
-                v-model="queryParams.entryChannel"
-                :options="dict.type.dm_entry_channel.options"
-                :props="{ expandTrigger: 'hover', emitPath: false }"
-                placeholder="请选择进件渠道"
-                clearable
-                style="width: 100%"
-              />
+              <el-cascader v-model="queryParams.entryChannel" :options="dict.type.dm_entry_channel.options"
+                :props="{ expandTrigger: 'hover', emitPath: false }" placeholder="请选择进件渠道" clearable
+                style="width: 100%" />
               <!--              <el-select v-model="queryParams.entryChannel" placeholder="请选择进件渠道" clearable style="width: 100%">-->
               <!--                <el-option v-for="dict in dict.type.dm_entry_channel" :key="dict.value" :label="dict.label" :value="dict.value" />-->
               <!--              </el-select>-->
@@ -50,20 +49,23 @@
           <el-col :span="6">
             <el-form-item label="投诉分类" prop="bankComplaintType">
               <el-select v-model="queryParams.bankComplaintType" placeholder="请选择投诉分类" clearable style="width: 100%">
-                <el-option v-for="dict in dict.type.dm_bank_complaint_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+                <el-option v-for="dict in dict.type.dm_bank_complaint_type" :key="dict.value" :label="dict.label"
+                  :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="6" v-if="$store.getters.userInfo.isDMLeader">
             <el-form-item label="调解员" prop="mediatorUserId">
               <el-select v-model="queryParams.mediatorUserId" placeholder="请选择调解员" clearable style="width: 100%">
-                <el-option v-for="item in mediatorOptions" :key="item.mediatorUserId" :label="item.nickName" :value="item.mediatorUserId" />
+                <el-option v-for="item in mediatorOptions" :key="item.mediatorUserId" :label="item.nickName"
+                  :value="item.mediatorUserId" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="6">
             <el-form-item label="工单编号" prop="workOrderId">
-              <el-input v-model="queryParams.workOrderId" placeholder="请输入工单编号" clearable @keyup.enter.native="handleQuery" style="width: 100%" />
+              <el-input v-model="queryParams.workOrderId" placeholder="请输入工单编号" clearable
+                @keyup.enter.native="handleQuery" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -75,31 +77,28 @@
             <el-col :span="6">
               <el-form-item label="证件类型" prop="certType">
                 <el-select v-model="queryParams.certType" placeholder="请选择证件类型" clearable style="width: 100%">
-                  <el-option v-for="dict in dict.type.cert_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+                  <el-option v-for="dict in dict.type.cert_type" :key="dict.value" :label="dict.label"
+                    :value="dict.value" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="证件号码" prop="certNum">
-                <el-input v-model="queryParams.certNum" placeholder="请输入证件号码" clearable @keyup.enter.native="handleQuery" style="width: 100%" />
+                <el-input v-model="queryParams.certNum" placeholder="请输入证件号码" clearable
+                  @keyup.enter.native="handleQuery" style="width: 100%" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="纠纷发生日期" prop="disputeDate">
-                <el-date-picker clearable v-model="queryParams.disputeDate" type="date" value-format="yyyy-MM-dd" placeholder="请选择纠纷发生日期" style="width: 100%"></el-date-picker>
+                <el-date-picker clearable v-model="queryParams.disputeDate" type="date" value-format="yyyy-MM-dd"
+                  placeholder="请选择纠纷发生日期" style="width: 100%"></el-date-picker>
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="业务类别" prop="businessType1">
-                <el-cascader
-                  v-model="queryParams.businessType1"
-                  :options="dict.type.dm_business_type.options"
-                  :props="{ emitPath: false, checkStrictly: true }"
-                  placeholder="请选择业务类别"
-                  clearable
-                  style="width: 100%"
-                  ref="businessType1Ref"
-                />
+                <el-cascader v-model="queryParams.businessType1" :options="dict.type.dm_business_type.options"
+                  :props="{ emitPath: false, checkStrictly: true }" placeholder="请选择业务类别" clearable style="width: 100%"
+                  ref="businessType1Ref" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -109,35 +108,33 @@
             <el-col :span="6">
               <el-form-item label="业务办理渠道" prop="handleChannel">
                 <el-select v-model="queryParams.handleChannel" placeholder="请选择业务办理渠道" clearable style="width: 100%">
-                  <el-option v-for="dict in dict.type.dm_handle_channel" :key="dict.value" :label="dict.label" :value="dict.value" />
+                  <el-option v-for="dict in dict.type.dm_handle_channel" :key="dict.value" :label="dict.label"
+                    :value="dict.value" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="产品销售渠道" prop="saleChannel">
                 <el-select v-model="queryParams.saleChannel" placeholder="请选择产品销售渠道" clearable style="width: 100%">
-                  <el-option v-for="dict in dict.type.dm_sale_channel" :key="dict.value" :label="dict.label" :value="dict.value" />
+                  <el-option v-for="dict in dict.type.dm_sale_channel" :key="dict.value" :label="dict.label"
+                    :value="dict.value" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="保险消费投诉事由分类" prop="insuranceComplaintType">
-                <el-select v-model="queryParams.insuranceComplaintType" placeholder="请选择保险消费投诉事由分类" clearable style="width: 100%">
-                  <el-option v-for="dict in dict.type.dm_insurance_complaint_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+                <el-select v-model="queryParams.insuranceComplaintType" placeholder="请选择保险消费投诉事由分类" clearable
+                  style="width: 100%">
+                  <el-option v-for="dict in dict.type.dm_insurance_complaint_type" :key="dict.value" :label="dict.label"
+                    :value="dict.value" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="险种类别" prop="insuranceType1">
-                <el-cascader
-                  v-model="queryParams.insuranceType1"
-                  :options="dict.type.dm_insurance_type.options"
-                  :props="{ emitPath: false, checkStrictly: true }"
-                  placeholder="请选择险种类别"
-                  clearable
-                  style="width: 100%"
-                  ref="insuranceType1Ref"
-                />
+                <el-cascader v-model="queryParams.insuranceType1" :options="dict.type.dm_insurance_type.options"
+                  :props="{ emitPath: false, checkStrictly: true }" placeholder="请选择险种类别" clearable style="width: 100%"
+                  ref="insuranceType1Ref" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -147,32 +144,29 @@
             <el-col :span="6">
               <el-form-item label="受理状态" prop="acceptStatus">
                 <el-select v-model="queryParams.acceptStatus" placeholder="请选择受理状态" clearable style="width: 100%">
-                  <el-option v-for="dict in dict.type.dm_accept_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+                  <el-option v-for="dict in dict.type.dm_accept_status" :key="dict.value" :label="dict.label"
+                    :value="dict.value" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="调解结果" prop="mediationResult">
                 <el-select v-model="queryParams.mediationResult" placeholder="请选择调解结果" clearable style="width: 100%">
-                  <el-option v-for="dict in dict.type.dm_mediation_result" :key="dict.value" :label="dict.label" :value="dict.value" />
+                  <el-option v-for="dict in dict.type.dm_mediation_result" :key="dict.value" :label="dict.label"
+                    :value="dict.value" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="5">
               <el-form-item label="联系方式">
-                <el-input v-model="queryParams.params.phone" placeholder="请输入联系方式或代理人联系方式" clearable @keyup.enter.native="handleQuery" style="width: 100%"/>
+                <el-input v-model="queryParams.params.phone" placeholder="请输入联系方式或代理人联系方式" clearable
+                  @keyup.enter.native="handleQuery" style="width: 100%" />
               </el-form-item>
             </el-col>
             <el-col :span="7">
               <el-form-item label="创建时间" prop="createTime">
-                <el-date-picker
-                  v-model="queryParams.params.createTime"
-                  value-format="yyyy-MM-dd HH:mm:ss"
-                  type="datetimerange"
-                  range-separator="至"
-                  start-placeholder="开始日期"
-                  end-placeholder="结束日期"
-                >
+                <el-date-picker v-model="queryParams.params.createTime" value-format="yyyy-MM-dd HH:mm:ss"
+                  type="datetimerange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期">
                 </el-date-picker>
               </el-form-item>
             </el-col>
@@ -235,7 +229,8 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <template v-hasPermi="['project:disputeMediation:add']">
-          <el-button type="primary" plain icon="el-icon-plus" size="mini" @click="handleAdd" v-if="$store.getters.userInfo.isDMEntryClerk || $store.getters.userInfo.isDMInstitutionEntryClerk">
+          <el-button type="primary" plain icon="el-icon-plus" size="mini" @click="handleAdd"
+            v-if="$store.getters.userInfo.isDMEntryClerk || $store.getters.userInfo.isDMInstitutionEntryClerk">
             新增
           </el-button>
         </template>
@@ -264,96 +259,79 @@
       <!--      </el-col>-->
 
       <el-col :span="1.5">
-        <el-button
-          type="info"
-          plain
-          icon="el-icon-upload2"
-          size="mini"
-          @click="$refs.importRef.open()"
-          v-hasPermi="['project:disputeMediation:import']"
-        >导入</el-button>
+        <el-button type="info" plain icon="el-icon-upload2" size="mini" @click="$refs.importRef.open()"
+          v-hasPermi="['project:disputeMediation:import']">导入</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="info"
-          plain
-          icon="el-icon-upload2"
-          size="mini"
-          @click="$refs.importByHDRef.open()"
-          v-hasPermi="['project:disputeMediation:importByHD']"
-        >河东法院导入</el-button>
+        <el-button type="info" plain icon="el-icon-upload2" size="mini" @click="$refs.importByHDRef.open()"
+          v-hasPermi="['project:disputeMediation:importByHD']">河东法院导入</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="mini"
-          @click="$refs.exportRef.open()"
-          v-hasPermi="['project:disputeMediation:export']"
-        >总局导出</el-button>
+        <el-button type="warning" plain icon="el-icon-download" size="mini" @click="$refs.exportRef.open()"
+          v-hasPermi="['project:disputeMediation:export']">总局导出</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="warning"
-          icon="el-icon-download"
-          size="mini"
-          @click="handleExport"
-          v-hasPermi="['project:disputeMediation:dataExport']"
-        >数据导出</el-button>
+        <el-button type="warning" icon="el-icon-download" size="mini" @click="handleExport"
+          v-hasPermi="['project:disputeMediation:dataExport']">数据导出</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="primary"
-          round
-          icon="el-icon-tickets"
-          size="mini"
-          @click="() => { backlog = !backlog; getList();}"
-        >{{ backlog ? "待办" : "全部" }}
+        <el-button type="primary" round icon="el-icon-tickets" size="mini"
+          @click="() => { backlog = !backlog; getList(); }">{{
+            backlog ? "待办" : "全部" }}
         </el-button>
       </el-col>
       <el-col :span="1.5" v-if="$store.getters.userInfo.isDMMediator">
-        <el-button
-          type="success"
-          round
-          icon="el-icon-copy-document"
-          size="mini"
-          @click="() => { myCase = myCase === 2 ? 0 : myCase + 1; getList();}"
-        >{{ myCase === 0 ? "全部" : myCase === 1 ? "主调" : myCase === 2 ? "副调" : "" }}</el-button>
+        <el-button type="success" round icon="el-icon-copy-document" size="mini"
+          @click="() => { myCase = myCase === 2 ? 0 : myCase + 1; getList(); }">{{ myCase === 0 ? "全部" : myCase === 1 ?
+            "主调" :
+            myCase === 2 ? "副调" : "" }}</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns" />
       <div class="top-right-btn" style="margin-right: 10px">
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5" v-if="$store.getters.userInfo.isDMMediator">
             <el-button-group>
-              <el-button type="primary" plain icon="el-icon-arrow-left" size="mini" :disabled="queryParams.pageNum === 1" @click="queryParams.pageNum-=1;getList();">上一页</el-button>
-              <el-button type="primary" plain size="mini" :disabled="queryParams.pageNum * queryParams.pageSize >= total" @click="queryParams.pageNum+=1;getList();">下一页<i class="el-icon-arrow-right el-icon--right"/></el-button>
+              <el-button type="primary" plain icon="el-icon-arrow-left" size="mini"
+                :disabled="queryParams.pageNum === 1" @click="queryParams.pageNum -= 1; getList();">上一页</el-button>
+              <el-button type="primary" plain size="mini"
+                :disabled="queryParams.pageNum * queryParams.pageSize >= total"
+                @click="queryParams.pageNum += 1; getList();">下一页<i
+                  class="el-icon-arrow-right el-icon--right" /></el-button>
             </el-button-group>
           </el-col>
           <el-col :span="1.5" v-if="this.$store.getters.userInfo.isDMMediatorAuditor">
             <el-tooltip class="item" effect="dark" content="派单审核记录" placement="top">
-              <el-button size="mini" circle icon="el-icon-s-order" @click="$refs.mediatorAuditListRef.open()"/>
+              <el-button size="mini" circle icon="el-icon-s-order" @click="$refs.mediatorAuditListRef.open()" />
             </el-tooltip>
           </el-col>
-          <el-col :span="1.5" v-if="this.$store.getters.userInfo.dept.type === this.DEPT_TYPE.center || this.$store.getters.userInfo.dept.type === this.DEPT_TYPE.centerDept">
+          <el-col :span="1.5"
+            v-if="this.$store.getters.userInfo.dept.type === this.DEPT_TYPE.center || this.$store.getters.userInfo.dept.type === this.DEPT_TYPE.centerDept">
             <el-tooltip class="item" effect="dark" content="查看自动分配表" placement="top">
-              <el-button size="mini" circle icon="el-icon-s-custom" @click="$refs.autoAssignRef.open()"/>
+              <el-button size="mini" circle icon="el-icon-s-custom" @click="$refs.autoAssignRef.open()" />
             </el-tooltip>
           </el-col>
         </el-row>
       </div>
     </el-row>
 
-    <el-table v-loading="loading" :data="disputeMediationList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange" :row-class-name="tableRowClassName">>
-      <el-table-column label="工单编号" align="center" prop="workOrderId" v-if="columns.find(s => s.label === '工单编号').visible" sortable="custom" width="130px">
+    <el-table v-loading="loading" :data="disputeMediationList" @selection-change="handleSelectionChange"
+      :default-sort="defaultSort" @sort-change="handleSortChange" :row-class-name="tableRowClassName">>
+      <el-table-column label="工单编号" align="center" prop="workOrderId"
+        v-if="columns.find(s => s.label === '工单编号').visible" sortable="custom" width="130px">
         <template slot-scope="scope">
-          <el-tooltip v-if="!$store.getters.userInfo.isDMInstitution && scope.row.mediatorAcceptTime && !scope.row.finishTime" class="item" effect="dark" :content="'调解员接案时间:'+scope.row.mediatorAcceptTime" placement="right">
-            <el-badge class="item" :value="scope.row.mediatorHandleTime" :type="scope.row.mediatorHandleTime<=15?'info':(scope.row.mediatorHandleTime<30?'warning':'danger')">
+          <el-tooltip
+            v-if="!$store.getters.userInfo.isDMInstitution && scope.row.mediatorAcceptTime && !scope.row.finishTime"
+            class="item" effect="dark" :content="'调解员接案时间:' + scope.row.mediatorAcceptTime" placement="right">
+            <el-badge class="item" :value="scope.row.mediatorHandleTime"
+              :type="scope.row.mediatorHandleTime <= 15 ? 'info' : (scope.row.mediatorHandleTime < 30 ? 'warning' : 'danger')">
               <span>{{ scope.row.workOrderId }}</span>
             </el-badge>
           </el-tooltip>
-          <el-tooltip v-else-if="$store.getters.userInfo.isDMInstitution && scope.row.sendFeedbackTime && !scope.row.feedbackTime" class="item" effect="dark" :content="'发送反馈单时间:'+scope.row.sendFeedbackTime" placement="right">
-            <el-badge class="item" :value="scope.row.deptHandleTime" :type="scope.row.deptHandleTime<4?'info':(scope.row.deptHandleTime<7?'warning':'danger')">
+          <el-tooltip
+            v-else-if="$store.getters.userInfo.isDMInstitution && scope.row.sendFeedbackTime && !scope.row.feedbackTime"
+            class="item" effect="dark" :content="'发送反馈单时间:' + scope.row.sendFeedbackTime" placement="right">
+            <el-badge class="item" :value="scope.row.deptHandleTime"
+              :type="scope.row.deptHandleTime < 4 ? 'info' : (scope.row.deptHandleTime < 7 ? 'warning' : 'danger')">
               <span>{{ scope.row.workOrderId }}</span>
             </el-badge>
           </el-tooltip>
@@ -361,7 +339,8 @@
         </template>
       </el-table-column>
       <el-table-column label="消费者姓名" align="center" prop="name" v-if="columns.find(s => s.label === '消费者姓名').visible" />
-      <el-table-column label="联系方式" align="center" width="110" prop="phone" v-if="columns.find(s => s.label === '联系方式').visible"/>
+      <el-table-column label="联系方式" align="center" width="110" prop="phone"
+        v-if="columns.find(s => s.label === '联系方式').visible" />
       <el-table-column label="接案时间" align="center" width="100" v-if="columns.find(s => s.label === '接案时间').visible">
         <template slot-scope="scope">
           <span v-if="scope.row.createType !== '2'">{{ parseTime(scope.row.createTime) }}</span>
@@ -377,7 +356,8 @@
           <dict-tag :options="dict.type.dm_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="结案时间" align="center" prop="finishTime" width="100" v-if="columns.find(s => s.label === '结案时间').visible" sortable="custom">
+      <el-table-column label="结案时间" align="center" prop="finishTime" width="100"
+        v-if="columns.find(s => s.label === '结案时间').visible" sortable="custom">
         <template slot-scope="scope">
           <span v-if="scope.row.finishTime">{{ parseTime(scope.row.finishTime) }}</span>
           <span v-else>-</span>
@@ -388,50 +368,62 @@
           <dict-tag :options="dict.type.cert_type" :value="scope.row.certType" />
         </template>
       </el-table-column>
-      <el-table-column label="证件号码" align="center" prop="certNum" v-if="columns.find(s => s.label === '证件号码').visible" />
-      <el-table-column label="纠纷发生日期" align="center" prop="disputeDate" width="180" v-if="columns.find(s => s.label === '纠纷发生日期').visible">
+      <el-table-column label="证件号码" align="center" prop="certNum"
+        v-if="columns.find(s => s.label === '证件号码').visible" />
+      <el-table-column label="纠纷发生日期" align="center" prop="disputeDate" width="180"
+        v-if="columns.find(s => s.label === '纠纷发生日期').visible">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.disputeDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="进件渠道" align="center" prop="entryChannel" v-if="columns.find(s => s.label === '进件渠道').visible">
+      <el-table-column label="进件渠道" align="center" prop="entryChannel"
+        v-if="columns.find(s => s.label === '进件渠道').visible">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.dm_entry_channel" :value="scope.row.entryChannel" />
         </template>
       </el-table-column>
-      <el-table-column label="受理状态" align="center" prop="acceptStatus" v-if="columns.find(s => s.label === '受理状态').visible">
+      <el-table-column label="受理状态" align="center" prop="acceptStatus"
+        v-if="columns.find(s => s.label === '受理状态').visible">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.dm_accept_status" :value="scope.row.acceptStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="协议阶段" align="center" prop="agreementStep" v-if="columns.find((s) => s.label === '协议阶段').visible">
+      <el-table-column label="协议阶段" align="center" prop="agreementStep"
+        v-if="columns.find((s) => s.label === '协议阶段').visible">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.dm_agreement_step" :value="scope.row.agreementStep" />
         </template>
       </el-table-column>
-      <el-table-column label="调解结果" align="center" prop="mediationResult" v-if="columns.find((s) => s.label === '调解结果').visible">
+      <el-table-column label="调解结果" align="center" prop="mediationResult"
+        v-if="columns.find((s) => s.label === '调解结果').visible">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.dm_mediation_result" :value="scope.row.mediationResult" />
         </template>
       </el-table-column>
-      <el-table-column label="结案类型" align="center" prop="finishType" v-if="columns.find((s) => s.label === '结案类型').visible">
+      <el-table-column label="结案类型" align="center" prop="finishType"
+        v-if="columns.find((s) => s.label === '结案类型').visible">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.dm_finish_type" :value="scope.row.finishType" />
         </template>
       </el-table-column>
-      <el-table-column label="满意度" align="center" prop="satisfactionScore" width="80" v-if="columns.find((s) => s.label === '满意度').visible">
+      <el-table-column label="满意度" align="center" prop="satisfactionScore" width="80"
+        v-if="columns.find((s) => s.label === '满意度').visible">
         <template slot-scope="scope">
-          <span>{{ scope.row.satisfactionScore != null && scope.row.satisfactionScore !== '' ? scope.row.satisfactionScore : '-' }}</span>
+          <span>{{ scope.row.satisfactionScore != null && scope.row.satisfactionScore !== '' ?
+            scope.row.satisfactionScore : '-' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="100" v-if="columns.find(s => s.label === '创建时间').visible" sortable="custom">
+      <el-table-column label="创建时间" align="center" prop="createTime" width="100"
+        v-if="columns.find(s => s.label === '创建时间').visible" sortable="custom">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="修改时间" align="center" prop="updateTime" width="100" v-if="columns.find(i => i.label === '修改时间').visible" sortable="custom">
+      <el-table-column label="修改时间" align="center" prop="updateTime" width="100"
+        v-if="columns.find(i => i.label === '修改时间').visible" sortable="custom">
         <template slot-scope="scope">
-          <el-tooltip class="item" effect="dark" :content="scope.row.updateBy" placement="bottom" v-if="scope.row.updateBy">
+          <el-tooltip class="item" effect="dark" :content="scope.row.updateBy" placement="bottom"
+            v-if="scope.row.updateBy">
             <span>{{ parseTime(scope.row.updateTime) }}</span>
           </el-tooltip>
           <span v-if="!scope.row.updateBy">{{ parseTime(scope.row.updateTime) }}</span>
@@ -444,25 +436,35 @@
             详情
           </el-button>
 
-          <el-button size="mini" type="text" icon="el-icon-s-custom" @click="handleMediatorAudit(row)" v-if="$store.getters.userInfo.isDMMediatorAuditor && DM_STATUS.DM_STATUS5 === row.status">
+          <el-button size="mini" type="text" icon="el-icon-s-custom" @click="handleMediatorAudit(row)"
+            v-if="$store.getters.userInfo.isDMMediatorAuditor && DM_STATUS.DM_STATUS5 === row.status">
             派单审核
           </el-button>
 
-          <el-button size="mini" type="text" icon="el-icon-s-order" @click="showMediatorAuditRecord(row)" v-if="row.mediatorChange && ($store.getters.userInfo.isDMMediatorChanger || $store.getters.userInfo.isDMMediatorAuditor)">
+          <el-button size="mini" type="text" icon="el-icon-s-order" @click="showMediatorAuditRecord(row)"
+            v-if="row.mediatorChange && ($store.getters.userInfo.isDMMediatorChanger || $store.getters.userInfo.isDMMediatorAuditor)">
             派单审核记录
           </el-button>
 
-          <div v-if="($store.getters.userInfo.isDMMediator && ($store.getters.userInfo.userId === row.mediatorUserId || $store.getters.userInfo.userId === row.assistantUserId) && [DM_STATUS.DM_STATUS2, DM_STATUS.DM_STATUS3, DM_STATUS.DM_STATUS4, DM_STATUS.DM_STATUS10].includes(row.status))
-                      || ($store.getters.userInfo.isDMMediator && !isApproval(row) && $store.getters.userInfo.userId === row.mediatorUserId && [DM_STATUS.DM_STATUS2, DM_STATUS.DM_STATUS3, DM_STATUS.DM_STATUS4].includes(row.status))
-                      || ($store.getters.userInfo.isDMMediatorChanger && (DM_STATUS.DM_STATUS2 === row.status || DM_STATUS.DM_STATUS5 === row.status) && !row.assistantUserId)
-                      || (($store.getters.userInfo.isDMMediator || $store.getters.userInfo.isDMEntryClerk) && [DM_STATUS.DM_STATUS2, DM_STATUS.DM_STATUS3, DM_STATUS.DM_STATUS4].includes(row.status))">
+          <div
+            v-if="($store.getters.userInfo.isDMMediator && ($store.getters.userInfo.userId === row.mediatorUserId || $store.getters.userInfo.userId === row.assistantUserId) && [DM_STATUS.DM_STATUS2, DM_STATUS.DM_STATUS3, DM_STATUS.DM_STATUS4, DM_STATUS.DM_STATUS10].includes(row.status))
+              || ($store.getters.userInfo.isDMMediator && !isApproval(row) && $store.getters.userInfo.userId === row.mediatorUserId && [DM_STATUS.DM_STATUS2, DM_STATUS.DM_STATUS3, DM_STATUS.DM_STATUS4].includes(row.status))
+              || ($store.getters.userInfo.isDMMediatorChanger && (DM_STATUS.DM_STATUS2 === row.status || DM_STATUS.DM_STATUS5 === row.status) && !row.assistantUserId)
+              || (($store.getters.userInfo.isDMMediator || $store.getters.userInfo.isDMEntryClerk) && [DM_STATUS.DM_STATUS2, DM_STATUS.DM_STATUS3, DM_STATUS.DM_STATUS4].includes(row.status))">
             <el-dropdown trigger="click" size="mini" @command="edit($event, row)">
               <el-button size="mini" type="text" icon="el-icon-d-arrow-right">修改</el-button>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="edit" icon="el-icon-edit" v-if="$store.getters.userInfo.isDMMediator && ($store.getters.userInfo.userId === row.mediatorUserId || $store.getters.userInfo.userId === row.assistantUserId) && [DM_STATUS.DM_STATUS2, DM_STATUS.DM_STATUS3, DM_STATUS.DM_STATUS4, DM_STATUS.DM_STATUS10].includes(row.status)">{{ DM_STATUS.DM_STATUS2 === row.status && row.assistantUserId && DM_ENTRY_CHANNEL.COURT.includes(row.entryChannel) ? "修改工单开始调解" : "修改工单" }}</el-dropdown-item>
-                <el-dropdown-item command="editAssistant" icon="el-icon-s-custom" v-if="$store.getters.userInfo.isDMMediator && !isApproval(row) && $store.getters.userInfo.userId === row.mediatorUserId && [DM_STATUS.DM_STATUS2, DM_STATUS.DM_STATUS3, DM_STATUS.DM_STATUS4].includes(row.status)">{{ row.assistantUserId?'修改助理调解员':'选择助理调解员' }}</el-dropdown-item>
-                <el-dropdown-item command="editMediator" icon="el-icon-s-custom" v-if="$store.getters.userInfo.isDMMediatorChanger && (DM_STATUS.DM_STATUS2 === row.status || DM_STATUS.DM_STATUS5 === row.status) && !row.assistantUserId">修改调解员</el-dropdown-item>
-                <el-dropdown-item command="editDept" icon="el-icon-office-building" v-if="($store.getters.userInfo.isDMMediator || $store.getters.userInfo.isDMEntryClerk) && [DM_STATUS.DM_STATUS2, DM_STATUS.DM_STATUS3, DM_STATUS.DM_STATUS4].includes(row.status)">更改机构</el-dropdown-item>
+                <el-dropdown-item command="edit" icon="el-icon-edit"
+                  v-if="$store.getters.userInfo.isDMMediator && ($store.getters.userInfo.userId === row.mediatorUserId || $store.getters.userInfo.userId === row.assistantUserId) && [DM_STATUS.DM_STATUS2, DM_STATUS.DM_STATUS3, DM_STATUS.DM_STATUS4, DM_STATUS.DM_STATUS10].includes(row.status)">{{
+                    DM_STATUS.DM_STATUS2 === row.status && row.assistantUserId &&
+                      DM_ENTRY_CHANNEL.COURT.includes(row.entryChannel) ? "修改工单开始调解" : "修改工单" }}</el-dropdown-item>
+                <el-dropdown-item command="editAssistant" icon="el-icon-s-custom"
+                  v-if="$store.getters.userInfo.isDMMediator && !isApproval(row) && $store.getters.userInfo.userId === row.mediatorUserId && [DM_STATUS.DM_STATUS2, DM_STATUS.DM_STATUS3, DM_STATUS.DM_STATUS4].includes(row.status)">{{
+                    row.assistantUserId ?'修改助理调解员':'选择助理调解员' }}</el-dropdown-item>
+                <el-dropdown-item command="editMediator" icon="el-icon-s-custom"
+                  v-if="$store.getters.userInfo.isDMMediatorChanger && (DM_STATUS.DM_STATUS2 === row.status || DM_STATUS.DM_STATUS5 === row.status) && !row.assistantUserId">修改调解员</el-dropdown-item>
+                <el-dropdown-item command="editDept" icon="el-icon-office-building"
+                  v-if="($store.getters.userInfo.isDMMediator || $store.getters.userInfo.isDMEntryClerk) && [DM_STATUS.DM_STATUS2, DM_STATUS.DM_STATUS3, DM_STATUS.DM_STATUS4].includes(row.status)">更改机构</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
           </div>
@@ -483,97 +485,125 @@
           <!--            更改机构-->
           <!--          </el-button>-->
 
-          <el-button size="mini" type="text" icon="el-icon-video-camera-solid" @click="showVideoAuditRecord(row)" v-if="row.videoAuditStatus && ($store.getters.userInfo.isDMVideoAuditor1 || $store.getters.userInfo.isDMVideoAuditor2)">
-            {{ row.videoAuditStatus.split(',').includes(DM_VIDEO_AUDIT_STATUS.STATUS1) && $store.getters.userInfo.isDMVideoAuditor1 || row.videoAuditStatus.split(',').includes(DM_VIDEO_AUDIT_STATUS.STATUS2) && $store.getters.userInfo.isDMVideoAuditor2 ? "录像审核" : "录像审核记录"}}
+          <el-button size="mini" type="text" icon="el-icon-video-camera-solid" @click="showVideoAuditRecord(row)"
+            v-if="row.videoAuditStatus && ($store.getters.userInfo.isDMVideoAuditor1 || $store.getters.userInfo.isDMVideoAuditor2)">
+            {{ row.videoAuditStatus.split(',').includes(DM_VIDEO_AUDIT_STATUS.STATUS1) &&
+              $store.getters.userInfo.isDMVideoAuditor1 ||
+              row.videoAuditStatus.split(',').includes(DM_VIDEO_AUDIT_STATUS.STATUS2) &&
+              $store.getters.userInfo.isDMVideoAuditor2 ? "录像审核" : "录像审核记录"}}
           </el-button>
 
-          <el-button size="mini" type="text" icon="el-icon-edit" @click="handleReception(row)" v-if="$store.getters.userInfo.isDMCenterHandler && DM_STATUS.DM_STATUS1 === row.status">
+          <el-button size="mini" type="text" icon="el-icon-edit" @click="handleReception(row)"
+            v-if="$store.getters.userInfo.isDMCenterHandler && DM_STATUS.DM_STATUS1 === row.status">
             前台处理
           </el-button>
 
-          <el-button size="mini" type="text" icon="el-icon-s-promotion" @click="sandFeedback(row)" v-if="$store.getters.userInfo.isDMMediator && DM_STATUS.DM_STATUS2 === row.status && row.assistantUserId && !DM_ENTRY_CHANNEL.COURT.includes(row.entryChannel)">
+          <el-button size="mini" type="text" icon="el-icon-s-promotion" @click="sandFeedback(row)"
+            v-if="$store.getters.userInfo.isDMMediator && DM_STATUS.DM_STATUS2 === row.status && row.assistantUserId && !DM_ENTRY_CHANNEL.COURT.includes(row.entryChannel)">
             {{ row.deptAcceptMediate ? "重新发送反馈单" : "发送反馈单" }}
           </el-button>
 
           <template v-hasPermi="['project:disputeMediation:handle']">
-            <el-button size="mini" type="text" icon="el-icon-edit" @click="handleFeedback1(row)" v-if="$store.getters.userInfo.isDMInstitutionHandle && DM_STATUS.DM_STATUS3 === row.status && !row.deptAcceptMediate && !DM_ENTRY_CHANNEL.COURT.includes(row.entryChannel)">
+            <el-button size="mini" type="text" icon="el-icon-edit" @click="handleFeedback1(row)"
+              v-if="$store.getters.userInfo.isDMInstitutionHandle && DM_STATUS.DM_STATUS3 === row.status && !row.deptAcceptMediate && !DM_ENTRY_CHANNEL.COURT.includes(row.entryChannel)">
               反馈
             </el-button>
-            <el-button size="mini" type="text" icon="el-icon-edit" @click="handleFeedback2(row)" v-if="$store.getters.userInfo.isDMInstitutionHandle && DM_STATUS.DM_STATUS20 !== row.status && SYS_YES_NO.sys_yes === row.deptAcceptMediate && !DM_ENTRY_CHANNEL.COURT.includes(row.entryChannel)">
+            <el-button size="mini" type="text" icon="el-icon-edit" @click="handleFeedback2(row)"
+              v-if="$store.getters.userInfo.isDMInstitutionHandle && DM_STATUS.DM_STATUS20 !== row.status && SYS_YES_NO.sys_yes === row.deptAcceptMediate && !DM_ENTRY_CHANNEL.COURT.includes(row.entryChannel)">
               {{ DM_STATUS.DM_STATUS3 === row.status && !row.feedbackTime ? "补充反馈单" : "修改反馈单" }}
             </el-button>
-            <el-button size="mini" type="text" icon="el-icon-star-on" @click="handleSatisfaction(row)" v-if="$store.getters.userInfo.isDMInstitutionHandle && SYS_YES_NO.sys_yes === row.deptAcceptMediate && !DM_ENTRY_CHANNEL.COURT.includes(row.entryChannel) && [DM_STATUS.DM_STATUS10, DM_STATUS.DM_STATUS20].includes(row.status)">
+            <el-button size="mini" type="text" icon="el-icon-star-on" @click="handleSatisfaction(row)"
+              v-if="$store.getters.userInfo.isDMInstitutionHandle && SYS_YES_NO.sys_yes === row.deptAcceptMediate && !DM_ENTRY_CHANNEL.COURT.includes(row.entryChannel) && [DM_STATUS.DM_STATUS10, DM_STATUS.DM_STATUS20].includes(row.status)">
               满意度
             </el-button>
           </template>
 
-          <template v-hasPermi="['project:disputeMediation:mediationRoomReservation', 'project:disputeMediation:mediationRoomUse']">
-            <div v-if="[DM_STATUS.DM_STATUS4, DM_STATUS.DM_STATUS10, DM_STATUS.DM_STATUS20].includes(row.status) && !$store.getters.userInfo.isDMInstitution">
+          <template
+            v-hasPermi="['project:disputeMediation:mediationRoomReservation', 'project:disputeMediation:mediationRoomUse']">
+            <div
+              v-if="[DM_STATUS.DM_STATUS4, DM_STATUS.DM_STATUS10, DM_STATUS.DM_STATUS20].includes(row.status) && !$store.getters.userInfo.isDMInstitution">
               <el-dropdown trigger="click" size="mini" @command="handleMediationRoom($event, row)">
                 <el-button size="mini" type="text" icon="el-icon-d-arrow-right">调解室</el-button>
                 <el-dropdown-menu slot="dropdown">
                   <template v-hasPermi="['project:disputeMediation:mediationRoomReservation']">
-                    <el-dropdown-item command="a" v-if="DM_STATUS.DM_STATUS4 === row.status && isDMMediator(row)">预约</el-dropdown-item>
+                    <el-dropdown-item command="a"
+                      v-if="DM_STATUS.DM_STATUS4 === row.status && isDMMediator(row)">预约</el-dropdown-item>
                   </template>
-                  <template v-hasPermi="['project:disputeMediation:mediationRoomReservation', 'project:disputeMediation:mediationRoomUse']">
-                    <el-dropdown-item command="b" v-if="!$store.getters.userInfo.isDMInstitution">预约记录</el-dropdown-item>
+                  <template
+                    v-hasPermi="['project:disputeMediation:mediationRoomReservation', 'project:disputeMediation:mediationRoomUse']">
+                    <el-dropdown-item command="b"
+                      v-if="!$store.getters.userInfo.isDMInstitution">预约记录</el-dropdown-item>
                   </template>
                 </el-dropdown-menu>
               </el-dropdown>
             </div>
           </template>
 
-          <div v-if="[DM_STATUS.DM_STATUS2, DM_STATUS.DM_STATUS3, DM_STATUS.DM_STATUS4, DM_STATUS.DM_STATUS10, DM_STATUS.DM_STATUS20].includes(row.status) && row.assistantUserId && !$store.getters.userInfo.isDMInstitution">
+          <div
+            v-if="[DM_STATUS.DM_STATUS2, DM_STATUS.DM_STATUS3, DM_STATUS.DM_STATUS4, DM_STATUS.DM_STATUS10, DM_STATUS.DM_STATUS20].includes(row.status) && row.assistantUserId && !$store.getters.userInfo.isDMInstitution">
             <el-dropdown trigger="click" size="mini" @command="handleInvestigation($event, row)">
               <el-button size="mini" type="text" icon="el-icon-d-arrow-right">调查记录</el-button>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="a" icon="el-icon-circle-plus" v-if="[DM_STATUS.DM_STATUS2, DM_STATUS.DM_STATUS3, DM_STATUS.DM_STATUS4].includes(row.status) && isDMMediator(row)">新增调查记录</el-dropdown-item>
+                <el-dropdown-item command="a" icon="el-icon-circle-plus"
+                  v-if="[DM_STATUS.DM_STATUS2, DM_STATUS.DM_STATUS3, DM_STATUS.DM_STATUS4].includes(row.status) && isDMMediator(row)">新增调查记录</el-dropdown-item>
                 <el-dropdown-item command="b" icon="el-icon-info">调查记录详情</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
           </div>
 
-          <div v-if="(DM_STATUS.DM_STATUS3 === row.status && SYS_YES_NO.sys_yes === row.deptAcceptMediate || [DM_STATUS.DM_STATUS4, DM_STATUS.DM_STATUS10, DM_STATUS.DM_STATUS20].includes(row.status)) && !$store.getters.userInfo.isDMInstitution">
+          <div
+            v-if="(DM_STATUS.DM_STATUS3 === row.status && SYS_YES_NO.sys_yes === row.deptAcceptMediate || [DM_STATUS.DM_STATUS4, DM_STATUS.DM_STATUS10, DM_STATUS.DM_STATUS20].includes(row.status)) && !$store.getters.userInfo.isDMInstitution">
             <el-dropdown trigger="click" size="mini" @command="handleMediationRecord($event, row)">
               <el-button size="mini" type="text" icon="el-icon-d-arrow-right">调解记录</el-button>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="a" icon="el-icon-circle-plus" v-if="(DM_STATUS.DM_STATUS3 === row.status && SYS_YES_NO.sys_yes === row.deptAcceptMediate || DM_STATUS.DM_STATUS4 === row.status) && isDMMediator(row)">新增调解记录</el-dropdown-item>
+                <el-dropdown-item command="a" icon="el-icon-circle-plus"
+                  v-if="(DM_STATUS.DM_STATUS3 === row.status && SYS_YES_NO.sys_yes === row.deptAcceptMediate || DM_STATUS.DM_STATUS4 === row.status) && isDMMediator(row)">新增调解记录</el-dropdown-item>
                 <el-dropdown-item command="b" icon="el-icon-info">调解记录详情</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
           </div>
 
-          <div v-if="!!row.agreementId || $store.getters.userInfo.isDMMediator && DM_STATUS.DM_STATUS4 === row.status && DM_AGREEMENT_STEP.SF !== row.agreementStep">
+          <div
+            v-if="!!row.agreementId || $store.getters.userInfo.isDMMediator && DM_STATUS.DM_STATUS4 === row.status && DM_AGREEMENT_STEP.SF !== row.agreementStep">
             <el-dropdown trigger="click" size="mini" @command="noticeBookSelect($event, row)">
               <el-button size="mini" type="text" icon="el-icon-d-arrow-right">协议书</el-button>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="edit" v-if="isDMMediator(row) && DM_STATUS.DM_STATUS4 === row.status && DM_AGREEMENT_STEP.SF !== row.agreementStep">编辑协议书</el-dropdown-item>
+                <el-dropdown-item command="edit"
+                  v-if="isDMMediator(row) && DM_STATUS.DM_STATUS4 === row.status && DM_AGREEMENT_STEP.SF !== row.agreementStep">编辑协议书</el-dropdown-item>
                 <el-dropdown-item command="check" v-if="!!row.agreementId">查看协议书</el-dropdown-item>
                 <el-dropdown-item command="download" v-if="!!row.agreementId">预审下载</el-dropdown-item>
-                <el-dropdown-item command="applyStamp" v-if="isDMMediator(row) && DM_STATUS.DM_STATUS4 === row.status && !!row.agreementId && DM_AGREEMENT_STEP.AS === row.agreementStep">用印申请</el-dropdown-item>
-                <el-dropdown-item command="openProcessPage" v-if="!!row.agreementId && !$store.getters.userInfo.isDMInstitution">查看审核流程</el-dropdown-item>
-                <el-dropdown-item command="signContractOpen" v-if="isDMMediator(row) && DM_STATUS.DM_STATUS4 === row.status && !!row.agreementId && DM_AGREEMENT_STEP.AF === row.agreementStep">签约协议书</el-dropdown-item>
-                <el-dropdown-item command="onlineSignInfoOpen" v-if="(DEPT_TYPE.center.includes($store.getters.userInfo.dept.type) || DEPT_TYPE.centerDept.includes($store.getters.userInfo.dept.type)) && !!row.signId">线上签署详情</el-dropdown-item>
+                <el-dropdown-item command="applyStamp"
+                  v-if="isDMMediator(row) && DM_STATUS.DM_STATUS4 === row.status && !!row.agreementId && DM_AGREEMENT_STEP.AS === row.agreementStep">用印申请</el-dropdown-item>
+                <el-dropdown-item command="openProcessPage"
+                  v-if="!!row.agreementId && !$store.getters.userInfo.isDMInstitution">查看审核流程</el-dropdown-item>
+                <el-dropdown-item command="signContractOpen"
+                  v-if="isDMMediator(row) && DM_STATUS.DM_STATUS4 === row.status && !!row.agreementId && DM_AGREEMENT_STEP.AF === row.agreementStep">签约协议书</el-dropdown-item>
+                <el-dropdown-item command="onlineSignInfoOpen"
+                  v-if="(DEPT_TYPE.center.includes($store.getters.userInfo.dept.type) || DEPT_TYPE.centerDept.includes($store.getters.userInfo.dept.type)) && !!row.signId">线上签署详情</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
           </div>
 
-          <div v-if="[DM_STATUS.DM_STATUS10, DM_STATUS.DM_STATUS20].includes(row.status) && SYS_YES_NO.sys_yes === row.needReturnVisit && !$store.getters.userInfo.isDMInstitution && DM_ACCEPT_STATUS.accept === row.acceptStatus && SYS_YES_NO.sys_yes === row.deptAcceptMediate && DM_FINISH_TYPE.normal === row.finishType">
+          <div
+            v-if="[DM_STATUS.DM_STATUS10, DM_STATUS.DM_STATUS20].includes(row.status) && SYS_YES_NO.sys_yes === row.needReturnVisit && !$store.getters.userInfo.isDMInstitution && DM_ACCEPT_STATUS.accept === row.acceptStatus && SYS_YES_NO.sys_yes === row.deptAcceptMediate && DM_FINISH_TYPE.normal === row.finishType">
             <el-dropdown trigger="click" size="mini" @command="handleCallback($event, row)">
               <el-button size="mini" type="text" icon="el-icon-d-arrow-right">回访记录</el-button>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="a" icon="el-icon-circle-plus" v-if="DM_STATUS.DM_STATUS10 === row.status && isDMMediator(row)">新增回访记录</el-dropdown-item>
+                <el-dropdown-item command="a" icon="el-icon-circle-plus"
+                  v-if="DM_STATUS.DM_STATUS10 === row.status && isDMMediator(row)">新增回访记录</el-dropdown-item>
                 <el-dropdown-item command="b" icon="el-icon-info">回访记录详情</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
           </div>
 
-          <div v-if="[DM_STATUS.DM_STATUS10, DM_STATUS.DM_STATUS20].includes(row.status) && DM_ACCEPT_STATUS.accept === row.acceptStatus && SYS_YES_NO.sys_yes === row.deptAcceptMediate && DM_FINISH_TYPE.normal === row.finishType">
+          <div
+            v-if="[DM_STATUS.DM_STATUS10, DM_STATUS.DM_STATUS20].includes(row.status) && DM_ACCEPT_STATUS.accept === row.acceptStatus && SYS_YES_NO.sys_yes === row.deptAcceptMediate && DM_FINISH_TYPE.normal === row.finishType">
             <el-dropdown trigger="click" size="mini" @command="handleAgreement($event, row)">
               <el-button size="mini" type="text" icon="el-icon-d-arrow-right">履约登记</el-button>
               <el-dropdown-menu slot="dropdown">
                 <template v-hasPermi="['project:disputeMediation:handle']">
-                  <el-dropdown-item command="a" icon="el-icon-circle-plus" v-if="DM_STATUS.DM_STATUS10 === row.status && $store.getters.userInfo.isDMInstitutionHandle">新增履约登记</el-dropdown-item>
+                  <el-dropdown-item command="a" icon="el-icon-circle-plus"
+                    v-if="DM_STATUS.DM_STATUS10 === row.status && $store.getters.userInfo.isDMInstitutionHandle">新增履约登记</el-dropdown-item>
                 </template>
                 <el-dropdown-item command="b" icon="el-icon-info">履约登记详情</el-dropdown-item>
               </el-dropdown-menu>
@@ -585,92 +615,106 @@
           <!--          </el-button>-->
 
           <div v-if="(SYS_YES_NO.sys_yes === row.deptAcceptMediate && (DM_STATUS.DM_STATUS3 === row.status || row.feedbackTime))
-                    || ($store.getters.userInfo.isDMMediator && DM_STATUS.DM_STATUS1 !== row.status)">
+            || ($store.getters.userInfo.isDMMediator && DM_STATUS.DM_STATUS1 !== row.status)">
             <el-dropdown trigger="click" size="mini" @command="downloadFile($event, row)">
               <el-button size="mini" type="text" icon="el-icon-d-arrow-right">相关下载</el-button>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="a" icon="el-icon-download" v-if="SYS_YES_NO.sys_yes === row.deptAcceptMediate && (DM_STATUS.DM_STATUS3 === row.status || row.feedbackTime)">下载反馈单</el-dropdown-item>
-                <el-dropdown-item command="b" icon="el-icon-download" v-if="$store.getters.userInfo.isDMMediator">下载通话录音</el-dropdown-item>
+                <el-dropdown-item command="a" icon="el-icon-download"
+                  v-if="SYS_YES_NO.sys_yes === row.deptAcceptMediate && (DM_STATUS.DM_STATUS3 === row.status || row.feedbackTime)">下载反馈单</el-dropdown-item>
+                <el-dropdown-item command="b" icon="el-icon-download"
+                  v-if="$store.getters.userInfo.isDMMediator">下载通话录音</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
           </div>
 
-          <el-button size="mini" type="text" icon="el-icon-phone" @click="$store.dispatch('settings/setCallInfoOpen', { open: true, workOrderId: row.workOrderId, dialNumber: null })" v-if="$store.getters.userInfo.isDMEntryClerk || $store.getters.userInfo.isDMMediator">拨打电话</el-button>
+          <el-button size="mini" type="text" icon="el-icon-phone"
+            @click="$store.dispatch('settings/setCallInfoOpen', { open: true, workOrderId: row.workOrderId, dialNumber: null })"
+            v-if="$store.getters.userInfo.isDMEntryClerk || $store.getters.userInfo.isDMMediator">拨打电话</el-button>
 
-          <el-button size="mini" type="text" icon="el-icon-document-checked" @click="handleFinish(row)" v-if="DM_STATUS.DM_STATUS4 === row.status && isDMMediator(row) && (row.deptAcceptMediate === SYS_YES_NO.sys_yes && row.mediationResult || row.deptAcceptMediate === SYS_YES_NO.sys_no) && (!row.agreementStep || [DM_AGREEMENT_STEP.AR, DM_AGREEMENT_STEP.AF, DM_AGREEMENT_STEP.SF].includes(row.agreementStep))">办结</el-button>
-          <el-button size="mini" type="text" icon="el-icon-document-delete" @click="terminate(row)" v-if="DM_STATUS.DM_STATUS2 === row.status && isDMMediator(row)">终止受理</el-button>
-          <el-button size="mini" type="text" icon="el-icon-document-delete" @click="terminate(row)" v-if="DM_STATUS.DM_STATUS4 === row.status && isDMMediator(row) && (!row.agreementStep || [DM_AGREEMENT_STEP.AR, DM_AGREEMENT_STEP.AF, DM_AGREEMENT_STEP.SF].includes(row.agreementStep))">终止调解</el-button>
+          <el-button size="mini" type="text" icon="el-icon-document-checked" @click="handleFinish(row)"
+            v-if="DM_STATUS.DM_STATUS4 === row.status && isDMMediator(row) && (row.deptAcceptMediate === SYS_YES_NO.sys_yes && row.mediationResult || row.deptAcceptMediate === SYS_YES_NO.sys_no) && (!row.agreementStep || [DM_AGREEMENT_STEP.AR, DM_AGREEMENT_STEP.AF, DM_AGREEMENT_STEP.SF].includes(row.agreementStep))">办结</el-button>
+          <el-button size="mini" type="text" icon="el-icon-document-delete" @click="terminate(row)"
+            v-if="DM_STATUS.DM_STATUS2 === row.status && isDMMediator(row)">终止受理</el-button>
+          <el-button size="mini" type="text" icon="el-icon-document-delete" @click="terminate(row)"
+            v-if="DM_STATUS.DM_STATUS4 === row.status && isDMMediator(row) && (!row.agreementStep || [DM_AGREEMENT_STEP.AR, DM_AGREEMENT_STEP.AF, DM_AGREEMENT_STEP.SF].includes(row.agreementStep))">终止调解</el-button>
 
-          <el-tooltip class="item" :disabled="!row.archiveRejectReason" effect="dark" :content="row.archiveRejectReason" placement="left">
-            <el-badge :is-dot="DM_ARCHIVE_STATUS.reject === row.archiveStatus" class="item" v-if="DM_STATUS.DM_STATUS10 === row.status && isDMMediator(row)">
-              <el-button size="mini" type="text" icon="el-icon-document-checked" @click="handleArchiveApply(row)" :disabled="DM_ARCHIVE_STATUS.apply === row.archiveStatus">{{DM_ARCHIVE_STATUS.apply === row.archiveStatus ? "已提交归档" : "提交归档"}}</el-button>
+          <el-tooltip class="item" :disabled="!row.archiveRejectReason" effect="dark" :content="row.archiveRejectReason"
+            placement="left">
+            <el-badge :is-dot="DM_ARCHIVE_STATUS.reject === row.archiveStatus" class="item"
+              v-if="DM_STATUS.DM_STATUS10 === row.status && isDMMediator(row)">
+              <el-button size="mini" type="text" icon="el-icon-document-checked" @click="handleArchiveApply(row)"
+                :disabled="DM_ARCHIVE_STATUS.apply === row.archiveStatus">{{ DM_ARCHIVE_STATUS.apply ===
+                  row.archiveStatus ?
+                "已提交归档" : "提交归档"}}</el-button>
             </el-badge>
           </el-tooltip>
-          <el-button size="mini" type="text" icon="el-icon-folder-checked" @click="handleArchive(row)" v-if="DM_STATUS.DM_STATUS10 === row.status && DM_ARCHIVE_STATUS.apply === row.archiveStatus && $store.getters.userInfo.isDMArchivist">归档</el-button>
-          <el-button size="mini" type="text" icon="el-icon-folder-delete" @click="handleArchiveReject(row)" v-if="DM_STATUS.DM_STATUS10 === row.status && DM_ARCHIVE_STATUS.apply === row.archiveStatus && $store.getters.userInfo.isDMArchivist">归档驳回</el-button>
+          <el-button size="mini" type="text" icon="el-icon-folder-checked" @click="handleArchive(row)"
+            v-if="DM_STATUS.DM_STATUS10 === row.status && DM_ARCHIVE_STATUS.apply === row.archiveStatus && $store.getters.userInfo.isDMArchivist">归档</el-button>
+          <el-button size="mini" type="text" icon="el-icon-folder-delete" @click="handleArchiveReject(row)"
+            v-if="DM_STATUS.DM_STATUS10 === row.status && DM_ARCHIVE_STATUS.apply === row.archiveStatus && $store.getters.userInfo.isDMArchivist">归档驳回</el-button>
 
           <div v-hasPermi="['project:disputeMediation:rollbackStatus']">
-            <el-button size="mini" type="text" icon="el-icon-back" @click="handleRollbackStatus(row)" v-if="DM_STATUS.DM_STATUS10 === row.status">状态回退</el-button>
+            <el-button size="mini" type="text" icon="el-icon-back" @click="handleRollbackStatus(row)"
+              v-if="DM_STATUS.DM_STATUS10 === row.status">状态回退</el-button>
           </div>
         </template>
       </el-table-column>
     </el-table>
 
-    <pagination v-show="total > 0" :total="total" :page.sync="queryParams.pageNum" :limit.sync="queryParams.pageSize" @pagination="getList"/>
+    <pagination v-show="total > 0" :total="total" :page.sync="queryParams.pageNum" :limit.sync="queryParams.pageSize"
+      @pagination="getList" />
 
 
     <!-- 新增纠纷业务工单对话框 -->
-    <AddDisputeMediation ref="addDisputeMediationRef" :deptOptions="deptOptionsAdd" :deptMap="deptMap" @callback="getList"/>
+    <AddDisputeMediation ref="addDisputeMediationRef" :deptOptions="deptOptionsAdd" :deptMap="deptMap"
+      @callback="getList" />
 
     <!-- 修改纠纷业务工单对话框 -->
-    <UpdateDisputeMediation ref="updateDisputeMediationRef" :title="updateDisputeMediationTitle" :deptOptions="deptOptions" :deptMap="deptMap" @callback="getList"/>
+    <UpdateDisputeMediation ref="updateDisputeMediationRef" :title="updateDisputeMediationTitle"
+      :deptOptions="deptOptions" :deptMap="deptMap" @callback="getList" />
 
 
     <!-- 前台处理对话框 -->
-    <ReceptionHandle ref="receptionHandleRef" :title="receptionHandleTitle" :deptOptions="deptOptions" :deptMap="deptMap" @callback="getList"/>
+    <ReceptionHandle ref="receptionHandleRef" :title="receptionHandleTitle" :deptOptions="deptOptions"
+      :deptMap="deptMap" @callback="getList" />
 
     <!-- 选择调解员 -->
-    <SelectMediator ref="selectMediatorRef" :title="selectMediatorTitle" @callback="getList"/>
+    <SelectMediator ref="selectMediatorRef" :title="selectMediatorTitle" @callback="getList" />
 
     <!-- 派单审核 -->
-    <MediatorAudit ref="mediatorAuditRef" :title="mediatorAuditTitle" @callback="getList"/>
+    <MediatorAudit ref="mediatorAuditRef" :title="mediatorAuditTitle" @callback="getList" />
 
     <!-- 派单审核记录 -->
-    <MediatorAuditRecord ref="mediatorAuditRecordRef" :title="mediatorAuditRecordTitle"/>
+    <MediatorAuditRecord ref="mediatorAuditRecordRef" :title="mediatorAuditRecordTitle" />
 
     <!-- 派单审核记录列表 -->
-    <MediatorAuditList ref="mediatorAuditListRef" :title="mediatorAuditListTitle"/>
+    <MediatorAuditList ref="mediatorAuditListRef" :title="mediatorAuditListTitle" />
 
     <!-- 录像审核记录 -->
-    <AutoVideo ref="autoVideoRef" :title="autoVideoTitle" @callback="getList"/>
+    <AutoVideo ref="autoVideoRef" :title="autoVideoTitle" @callback="getList" />
 
     <!-- 更改机构 -->
-    <SelectDept ref="selectDeptRef" :title="selectDeptTitle" :deptOptions="deptOptions" :deptMap="deptMap" @callback="getList"/>
+    <SelectDept ref="selectDeptRef" :title="selectDeptTitle" :deptOptions="deptOptions" :deptMap="deptMap"
+      @callback="getList" />
 
     <!--    &lt;!&ndash; 填写反馈单 &ndash;&gt;-->
     <!--    <Feedback ref="feedbackRef" :title="feedbackTitle" :deptOptions="deptOptions" :deptMap="deptMap" @callback="getList"/>-->
 
     <!-- 填写反馈单 -->
-    <Feedback1 ref="feedback1Ref" :title="feedbackTitle" @callback="getList"/>
+    <Feedback1 ref="feedback1Ref" :title="feedbackTitle" @callback="getList" />
 
     <!-- 填写反馈单 -->
-    <Feedback2 ref="feedback2Ref" :title="feedbackTitle" :deptOptions="deptOptions" :deptMap="deptMap" @callback="getList"/>
+    <Feedback2 ref="feedback2Ref" :title="feedbackTitle" :deptOptions="deptOptions" :deptMap="deptMap"
+      @callback="getList" />
 
     <!-- 纠纷业务详情 -->
-    <Detail ref="detailRef" :title="detailTitle" :deptOptions="deptOptions" :deptMap="deptMap" @minimize="minimize"/>
+    <Detail ref="detailRef" :title="detailTitle" :deptOptions="deptOptions" :deptMap="deptMap" @minimize="minimize" />
 
     <el-dialog title="满意度" :visible.sync="satisfactionOpen" width="420px" append-to-body :close-on-click-modal="false">
       <el-form :model="satisfactionForm" label-width="88px">
         <el-form-item label="满意度">
-          <el-input-number
-            v-model="satisfactionForm.satisfactionScore"
-            :min="0"
-            :max="100"
-            :precision="0"
-            controls-position="right"
-            style="width: 100%"
-            placeholder="0-100"
-          />
+          <el-input-number v-model="satisfactionForm.satisfactionScore" :min="0" :max="100" :precision="0"
+            controls-position="right" style="width: 100%" placeholder="0-100" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -680,77 +724,74 @@
     </el-dialog>
 
     <!-- 预约调解室 -->
-    <MediationRoomReservation ref="mediationRoomReservationRef" :title="mediationRoomReservationTitle" @callback="checkOpen"/>
+    <MediationRoomReservation ref="mediationRoomReservationRef" :title="mediationRoomReservationTitle"
+      @callback="checkOpen" />
 
     <!-- 提交预约调解弹窗 -->
-    <AppointmentAdd ref="appointmentAddRef" @callback="refreshMediationRoomReservation"/>
+    <AppointmentAdd ref="appointmentAddRef" @callback="refreshMediationRoomReservation" />
 
     <!-- 预约调解记录 -->
-    <AppointmentRecord ref="appointmentRecordRef" :title="appointmentRecordTitle"/>
+    <AppointmentRecord ref="appointmentRecordRef" :title="appointmentRecordTitle" />
 
 
     <!-- 新增调查记录 -->
-    <InvestigationCreate ref="investigationCreateRef" :title="investigationCreateTitle" @callback="handleInvestigation" @minimize="minimize"/>
+    <InvestigationCreate ref="investigationCreateRef" :title="investigationCreateTitle" @callback="handleInvestigation"
+      @minimize="minimize" />
 
     <!-- 调查记录详情  -->
-    <InvestigationDetail ref="investigationDetailRef" :title="investigationDetailTitle"/>
+    <InvestigationDetail ref="investigationDetailRef" :title="investigationDetailTitle" />
 
 
     <!-- 新增调解记录 -->
-    <MediationRecordCreate ref="mediationRecordCreateRef" :title="mediationRecordCreateTitle" @callback="handleMediationRecord" @minimize="minimize"/>
+    <MediationRecordCreate ref="mediationRecordCreateRef" :title="mediationRecordCreateTitle"
+      @callback="handleMediationRecord" @minimize="minimize" />
 
     <!-- 调解记录详情 -->
-    <MediationRecordDetail ref="mediationRecordDetailRef" :title="mediationRecordDetailTitle" @callback="getList"/>
+    <MediationRecordDetail ref="mediationRecordDetailRef" :title="mediationRecordDetailTitle" @callback="getList" />
 
 
     <!-- 新增履约登记 -->
-    <AgreementRecordCreate ref="agreementCreateRef" :title="agreementRecordCreateTitle" @callback="handleAgreement"/>
+    <AgreementRecordCreate ref="agreementCreateRef" :title="agreementRecordCreateTitle" @callback="handleAgreement" />
 
     <!-- 履约登记详情 -->
-    <AgreementRecordDetail ref="agreementDetailRef" :title="agreementRecordDetailTitle"/>
+    <AgreementRecordDetail ref="agreementDetailRef" :title="agreementRecordDetailTitle" />
 
 
     <!-- 新增回访记录 -->
-    <CallbackRecordCreate ref="callbackCreateRef" :title="callbackRecordCreateTitle" @callback="handleCallback"/>
+    <CallbackRecordCreate ref="callbackCreateRef" :title="callbackRecordCreateTitle" @callback="handleCallback" />
 
     <!-- 回访记录详情 -->
-    <CallbackRecordDetail ref="callbackDetailRef" :title="callbackRecordDetailTitle"/>
+    <CallbackRecordDetail ref="callbackDetailRef" :title="callbackRecordDetailTitle" />
 
 
     <!-- 调解协议书 -->
-    <Agreement ref="agreementRef" :title="agreementTitle" @callback="getList"/>
+    <Agreement ref="agreementRef" :title="agreementTitle" @callback="getList" />
 
     <!-- 流程弹窗 -->
-    <ProcessPage ref="processPageRef" :title="processPageTitle"/>
+    <ProcessPage ref="processPageRef" :title="processPageTitle" />
 
     <!-- 签约组件 -->
-    <SignContract ref="signContractRef" :title="signContractTitle" @callback="getList"/>
+    <SignContract ref="signContractRef" :title="signContractTitle" @callback="getList" />
 
     <!-- 线上签署详情 -->
-    <OnlineSignInfo ref="onlineSignInfoRef" :title="onlineSignInfoTitle"/>
+    <OnlineSignInfo ref="onlineSignInfoRef" :title="onlineSignInfoTitle" />
 
 
     <!-- 导入组件 -->
-    <Import ref="importRef" @callback="getList"/>
+    <Import ref="importRef" @callback="getList" />
 
     <!-- 河东法院导入 -->
-    <Import
-      ref="importByHDRef"
-      dialog-title="河东法院导入"
-      upload-path="/project/disputeMediation/importByHD"
-      :show-template-links="false"
-      :show-hd-template-link="true"
-      @callback="getList"
-    />
+    <Import ref="importByHDRef" dialog-title="河东法院导入" upload-path="/project/disputeMediation/importByHD"
+      :show-template-links="false" :show-hd-template-link="true" @callback="getList" />
 
     <!-- 导出组件 -->
-    <Export ref="exportRef"/>
+    <Export ref="exportRef" />
 
     <!-- 自动分配表 -->
-    <AutoAssign ref="autoAssignRef"/>
+    <AutoAssign ref="autoAssignRef" />
 
     <!-- 终止办结 -->
-    <Terminate ref="terminateRef" :title="terminateTitle" @callback="getList"/>
+    <Terminate ref="terminateRef" :title="terminateTitle" @callback="getList" />
 
     <!-- 悬浮按钮 -->
     <template v-if="showFloatingButton">
@@ -759,13 +800,13 @@
       </div>
     </template>
 
-    <view-file ref="fileViewer"/>
+    <view-file ref="fileViewer" />
   </div>
 </template>
 
 <script>
 import '@riophae/vue-treeselect/dist/vue-treeselect.css';
-import {institutionList} from '@/api/system/dept';
+import { institutionList } from '@/api/system/dept';
 import {
   DEPT_TYPE,
   SYS_YES_NO,
@@ -957,7 +998,7 @@ export default {
       // 主调、副调标识符
       myCase: 1,
       // 默认排序
-      defaultSort: {prop: "createTime", order: "descending"},
+      defaultSort: { prop: "createTime", order: "descending" },
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -994,24 +1035,24 @@ export default {
       },
       // 列信息
       columns: [
-        {label: `工单编号`, visible: true},
-        {label: `消费者姓名`, visible: true},
-        {label: `联系方式`, visible: true},
-        {label: `接案时间`, visible: true},
-        {label: `机构名称`, visible: true},
-        {label: `状态`, visible: true},
-        {label: `结案时间`, visible: true},
-        {label: `证件类型`, visible: false},
-        {label: `证件号码`, visible: false},
-        {label: `纠纷发生日期`, visible: false},
-        {label: `进件渠道`, visible: false},
-        {label: `受理状态`, visible: false},
-        {label: `协议阶段`, visible: false},
-        {label: `调解结果`, visible: false},
-        {label: `结案类型`, visible: false},
-        {label: `满意度`, visible: true},
-        {label: `创建时间`, visible: true},
-        {label: `修改时间`, visible: false},
+        { label: `工单编号`, visible: true },
+        { label: `消费者姓名`, visible: true },
+        { label: `联系方式`, visible: true },
+        { label: `接案时间`, visible: true },
+        { label: `机构名称`, visible: true },
+        { label: `状态`, visible: true },
+        { label: `结案时间`, visible: true },
+        { label: `证件类型`, visible: false },
+        { label: `证件号码`, visible: false },
+        { label: `纠纷发生日期`, visible: false },
+        { label: `进件渠道`, visible: false },
+        { label: `受理状态`, visible: false },
+        { label: `协议阶段`, visible: false },
+        { label: `调解结果`, visible: false },
+        { label: `结案类型`, visible: false },
+        { label: `满意度`, visible: true },
+        { label: `创建时间`, visible: true },
+        { label: `修改时间`, visible: false },
       ],
       // 常量
       DEPT_TYPE: DEPT_TYPE, // 机构类型
@@ -1078,13 +1119,13 @@ export default {
       this.initDict(newV, oldV);
     },
     "queryParams.businessType1"(newV, oldV) {
-      if(newV && this.$refs.businessType1Ref){
+      if (newV && this.$refs.businessType1Ref) {
         //关闭级联选择器下拉菜单
         this.$refs.businessType1Ref.toggleDropDownVisible(false);
       }
     },
     "queryParams.insuranceType1"(newV, oldV) {
-      if(newV && this.$refs.insuranceType1Ref){
+      if (newV && this.$refs.insuranceType1Ref) {
         //关闭级联选择器下拉菜单
         this.$refs.insuranceType1Ref.toggleDropDownVisible(false);
       }
@@ -1113,7 +1154,7 @@ export default {
     // 用印申请
     applyStamp(row) {
       this.$modal.confirm('工单编号"' + row.workOrderId + '"是否要申请用印').then(function () {
-        return applyStamp({workOrderId: row.workOrderId});
+        return applyStamp({ workOrderId: row.workOrderId });
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("操作成功");
@@ -1121,7 +1162,7 @@ export default {
       });
     },
     queryToData() {
-      const data = {...this.queryParams};
+      const data = { ...this.queryParams };
       if (this.backlog) {
         data.params.backlog = true;
       } else {
@@ -1158,7 +1199,7 @@ export default {
       this.loading = true;
       const data = this.queryToData();
       listDisputeMediation(data).then((response) => {
-        const {rows, total} = response;
+        const { rows, total } = response;
         this.disputeMediationList = rows;
         for (const disputeMediation of this.disputeMediationList) {
           if (disputeMediation.mediatorAcceptTime && !disputeMediation.finishTime) {
@@ -1252,7 +1293,7 @@ export default {
       this.$modal
         .confirm('是否确认办结纠纷业务工单编号为"' + row.workOrderId + '"的数据项？')
         .then(function () {
-          return finish({workOrderId: row.workOrderId});
+          return finish({ workOrderId: row.workOrderId });
         })
         .then(() => {
           this.getList();
@@ -1276,7 +1317,7 @@ export default {
       this.$modal
         .confirm('是否确认提交归档纠纷业务工单编号为"' + row.workOrderId + '"的数据项？')
         .then(function () {
-          return archiveApply({workOrderId: row.workOrderId});
+          return archiveApply({ workOrderId: row.workOrderId });
         })
         .then(() => {
           this.getList();
@@ -1293,7 +1334,7 @@ export default {
         inputPattern: /^.{1,50}$/,  // 限制最多50个字符
         inputErrorMessage: '输入不能为空，且最多只能输入50个字符',
       }).then(({ value }) => {
-        archiveReject({"workOrderId":row.workOrderId,"archiveRejectReason":value}).then((response) => {
+        archiveReject({ "workOrderId": row.workOrderId, "archiveRejectReason": value }).then((response) => {
           this.getList();
           this.$modal.msgSuccess('操作成功');
         })
@@ -1305,7 +1346,7 @@ export default {
       this.$modal
         .confirm('是否确认归档纠纷业务工单编号为"' + row.workOrderId + '"的数据项？')
         .then(function () {
-          return archive({workOrderId: row.workOrderId});
+          return archive({ workOrderId: row.workOrderId });
         })
         .then(() => {
           this.getList();
@@ -1322,7 +1363,7 @@ export default {
           this.handleUpdate(row)
           break;
         case 'editAssistant':
-          this.handleSelectMediator(row, row.assistantUserId?'修改助理调解员':'选择助理调解员')
+          this.handleSelectMediator(row, row.assistantUserId ? '修改助理调解员' : '选择助理调解员')
           break;
         case 'editMediator':
           this.handleSelectMediator(row, '修改调解员')
@@ -1496,7 +1537,7 @@ export default {
             this.satisfactionForm.satisfactionScore = Number(res.data.satisfactionScore);
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     },
     submitSatisfaction() {
       const score = this.satisfactionForm.satisfactionScore;
@@ -1529,7 +1570,7 @@ export default {
       this.detailTitle = "工单详情:" + row.workOrderId;
       this.$refs.detailRef.open(row);
       if (row.mediatorReminder && this.isDMMediator(row)) {
-        cancelMediatorReminder({workOrderId:row.workOrderId}).then(res => {
+        cancelMediatorReminder({ workOrderId: row.workOrderId }).then(res => {
           if (res.code === 200) {
             row.mediatorReminder = null;
           }
@@ -1544,7 +1585,7 @@ export default {
     // 选择调解员
     handleSelectMediator(row, title) {
       this.selectMediatorTitle = title + ":" + row.workOrderId;
-      this.$nextTick(()=>{
+      this.$nextTick(() => {
         this.$refs.selectMediatorRef.open(row);
       })
     },
@@ -1573,7 +1614,7 @@ export default {
       this.$modal
         .confirm('确认发送反馈单:"' + row.workOrderId + '"？')
         .then(function () {
-          return sendFeedback({workOrderId: row.workOrderId});
+          return sendFeedback({ workOrderId: row.workOrderId });
         })
         .then(() => {
           this.getList();
@@ -1684,7 +1725,7 @@ export default {
 
       return daysDiff;
     },
-    tableRowClassName({row, rowIndex}) {
+    tableRowClassName({ row, rowIndex }) {
       if (this.$store.getters.userInfo.isDMInstitution && DM_STATUS.DM_STATUS3 === row.status && row.sendFeedbackTime && !row.feedbackTime && this.calculateDaysBetween(row.sendFeedbackTime, new Date()) > 5) {
         return 'dept-reminder-row';
       }
@@ -1723,12 +1764,12 @@ export default {
           return
         }
       }
-      this.$confirm('是否将工单'+row.workOrderId+'回退至上一个状态:' + lastStatus, '状态回退', {
+      this.$confirm('是否将工单' + row.workOrderId + '回退至上一个状态:' + lastStatus, '状态回退', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        rollbackStatus({"workOrderId":row.workOrderId}).then((response) => {
+        rollbackStatus({ "workOrderId": row.workOrderId }).then((response) => {
           this.getList();
           this.$modal.msgSuccess('操作成功');
         })
@@ -1754,4 +1795,3 @@ export default {
   background: #e8f4ff;
 }
 </style>
-

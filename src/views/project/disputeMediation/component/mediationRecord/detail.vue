@@ -1,25 +1,33 @@
 <!-- 调解记录详情 -->
 <template>
   <div>
-    <el-dialog :title="title" :visible.sync="dialogVisible" :close-on-click-modal="false" @close="cancel" width="1250px">
+    <el-dialog :title="title" :visible.sync="dialogVisible" :close-on-click-modal="false" @close="cancel"
+      width="1250px">
       <div v-if="tabHeaderList.length > 0">
-        <el-tabs v-model="activate" @tab-click="handleTab" tab-position="left" :closable="isDMMediator() && [DM_STATUS.DM_STATUS2,DM_STATUS.DM_STATUS3,DM_STATUS.DM_STATUS4].includes(row.status)" @edit="handleTabsEdit">
+        <el-tabs v-model="activate" @tab-click="handleTab" tab-position="left"
+          :closable="isDMMediator() && [DM_STATUS.DM_STATUS2, DM_STATUS.DM_STATUS3, DM_STATUS.DM_STATUS4].includes(row.status)"
+          @edit="handleTabsEdit">
           <el-tab-pane v-for="(item, index) in tabHeaderList" :key="item.id" :label="item.time" :name="item.id">
             <div style="height: 550px">
-              <DetailForm ref="detailFormRef" v-if="activate === item.id" :relationActivate="relationActivate" @success="getList"/>
+              <DetailForm ref="detailFormRef" v-if="activate === item.id" :relationActivate="relationActivate"
+                @success="getList" />
             </div>
           </el-tab-pane>
         </el-tabs>
       </div>
 
-      <el-empty description="暂无记录" v-else/>
+      <el-empty description="暂无记录" v-else />
     </el-dialog>
   </div>
 </template>
 
 <script>
 /** api */
-import {getDisputeMediation, deleteMediationRecord} from '@/api/project/disputeMediation';
+import {
+  getDisputeMediation,
+  deleteMediationRecord,
+  getMediationRecordExpandInfo
+} from '@/api/project/disputeMediation';
 /** components */
 import DetailForm from './detailForm.vue';
 import { DM_STATUS } from '@/views/constant/CommonConstant'
@@ -27,13 +35,13 @@ import { DM_STATUS } from '@/views/constant/CommonConstant'
 export default {
   name: '',
   props: ['title'],
-  components: {DetailForm},
+  components: { DetailForm },
   data() {
     return {
       dialogVisible: false,
       tabLoading: false,
       activate: null,
-      relationActivate: {name: 'sound'},
+      relationActivate: { name: 'sound' },
       btnLoading: false,
       workOrderId: null,
       tabHeaderList: [],
@@ -114,14 +122,26 @@ export default {
 
     /**获取调解记录 */
     getList(activateId) {
-      getDisputeMediation(this.workOrderId).then(res => {
+      getDisputeMediation(this.workOrderId).then(async res => {
+
         this.row = res.data;
         this.dataList = res.data.dmMediationRecordList;
+
         if (this.dataList.length > 0) {
+          this.dataList = await Promise.all(
+            this.dataList.map(async (item) => {
+              const addList = await this.getAdd(item.mediationRecordId);
+              return {
+                ...item,
+                ...addList,
+              };
+            })
+          );
           this.tabHeaderList = this.dataList.map(item => ({
             id: item.mediationRecordId.toString(),
             time: item.time
           }));
+
 
           this.activate = activateId ? activateId.toString() : this.tabHeaderList[this.tabHeaderList.length - 1].id;
           this.$nextTick(() => {
@@ -131,6 +151,22 @@ export default {
           this.tabHeaderList = [];
         }
       })
+    },
+    // 根据 mediationRecordId 查询扩展信息，返回 markCaseType（查询失败返回 null）
+    async getAdd(mediationRecordId) {
+      try {
+        const res = await getMediationRecordExpandInfo(mediationRecordId);
+        if (res.code === 200 && res.data != null) {
+          return {
+            otherAgreedMediationTerms: res.data.otherAgreedMediationTerms ?? null,
+            caseLable: res.data.caseLable ?? null
+          };
+        }
+        return null;
+      } catch (e) {
+        console.error('获取调解记录扩展信息失败:', e);
+        return null;
+      }
     },
     // 校验工单调解员
     isDMMediator() {
