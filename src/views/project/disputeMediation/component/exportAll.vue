@@ -15,20 +15,7 @@
                     ></el-option>
                 </el-select>
             </el-form-item>
-            <el-form-item label="案件状态" prop="status">
-                <el-select v-model="form.status" placeholder="请选择案件状态" clearable>
-                    <el-option
-                        v-for="item in [
-                            { label: '调解中', value: '4' },
-                            { label: '已办结', value: '10' }
-                        ]"
-                        :key="item.value"
-                        :label="item.label"
-                        :value="item.value"
-                    ></el-option>
-                </el-select>
-            </el-form-item>
-            <el-form-item label="工单创建日期" prop="finishTime" label-width="110px">
+            <el-form-item label="办结时间" prop="finishTime">
                 <el-date-picker
                     v-model="form.finishTime"
                     type="datetimerange"
@@ -52,18 +39,16 @@
 export default {
     data() {
         return {
-            title: '消保平台自收案件导出',
+            title: '消保平台转办导出',
             visible: false,
             // 导入参数
             form: {
                 industry: undefined,
-                status: undefined,
                 finishTime: undefined
             },
             rules: {
                 industry: [{ required: true, message: '行业为必填项', trigger: 'change' }],
-                status: [{ required: true, message: '案件状态为必填项', trigger: 'change' }],
-                finishTime: [{ required: true, message: '工单创建日期为必填项', trigger: 'change' }]
+                finishTime: [{ required: true, message: '办结时间为必填项', trigger: 'change' }]
             },
             pickerOptions: {
                 shortcuts: [
@@ -117,7 +102,6 @@ export default {
             start.setDate(start.getDate() - 1);
             this.form = {
                 industry: undefined,
-                status: undefined,
                 finishTime: [start, end]
             };
             this.resetForm('form');
@@ -130,16 +114,15 @@ export default {
                     const finishTimeStart = this.form.finishTime[0];
                     const finishTimeEnd = this.form.finishTime[1];
                     this.download(
-                        'project/disputeMediation/selfReceivingCaseExport',
+                        'project/disputeMediation/export',
                         {
                             params: {
                                 industry: this.form.industry,
-                                status: this.form.status,
                                 finishTimeStart: this.parseTime(finishTimeStart, '{y}-{m}-{d} {h}:{i}:{s}'),
                                 finishTimeEnd: this.parseTime(finishTimeEnd, '{y}-{m}-{d} {h}:{i}:{s}')
                             }
                         },
-                        `消保平台自收案件导出_${this.parseTime(finishTimeEnd, '{y}-{m}-{d}')}.xlsx`
+                        `消保平台转办导出_${this.parseTime(finishTimeEnd, '{y}-{m}-{d}')}.xlsx`
                     );
                     this.visible = false;
                 }
