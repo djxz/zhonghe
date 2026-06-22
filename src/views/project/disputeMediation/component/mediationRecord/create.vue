@@ -1,8 +1,8 @@
 <!-- 新增调解记录 -->
 <template>
   <div>
-    <el-dialog :visible.sync="dialogVisible" :close-on-click-modal="false" width="75%"
-               :show-close="false" class="mediation-dialog">
+    <el-dialog :visible.sync="dialogVisible" :close-on-click-modal="false" width="75%" :show-close="false"
+      class="mediation-dialog">
       <!-- <template #title>
         <div>
           <span class="el-dialog__title">{{ title }}</span>
@@ -36,7 +36,8 @@
             <el-descriptions-item label="消费者代理人联系方式" v-if="SYS_YES_NO.sys_no === row.isSelf">
               {{ row.agentPhone }}
               <el-button type="success" icon="el-icon-phone" circle size="mini" v-if="row.agentPhone"
-                         style="margin-left: 5px" @click="$store.dispatch('settings/setCallInfoOpen', { open: true, workOrderId: row.workOrderId, dialNumber: row.agentPhone })" />
+                style="margin-left: 5px"
+                @click="$store.dispatch('settings/setCallInfoOpen', { open: true, workOrderId: row.workOrderId, dialNumber: row.agentPhone })" />
             </el-descriptions-item>
             <el-descriptions-item label="消费者姓名">
               {{ row.name }}
@@ -44,7 +45,8 @@
             <el-descriptions-item label="消费者联系方式">
               {{ row.phone }}
               <el-button type="success" icon="el-icon-phone" circle size="mini" v-if="row.phone"
-                         style="margin-left: 5px" @click="$store.dispatch('settings/setCallInfoOpen', { open: true, workOrderId: row.workOrderId, dialNumber: row.phone })" />
+                style="margin-left: 5px"
+                @click="$store.dispatch('settings/setCallInfoOpen', { open: true, workOrderId: row.workOrderId, dialNumber: row.phone })" />
             </el-descriptions-item>
             <el-descriptions-item label="机构联系人">
               {{ row.deptLeader }}
@@ -52,7 +54,8 @@
             <el-descriptions-item label="机构联系电话">
               {{ row.deptPhone }}
               <el-button type="success" icon="el-icon-phone" circle size="mini" v-if="row.deptPhone"
-                         style="margin-left: 5px" @click="$store.dispatch('settings/setCallInfoOpen', { open: true, workOrderId: row.workOrderId, dialNumber: row.deptPhone })" />
+                style="margin-left: 5px"
+                @click="$store.dispatch('settings/setCallInfoOpen', { open: true, workOrderId: row.workOrderId, dialNumber: row.deptPhone })" />
             </el-descriptions-item>
             <el-descriptions-item label="机构代表姓名">
               {{ row.deptContact }}
@@ -60,17 +63,19 @@
             <el-descriptions-item label="机构代表联系方式">
               {{ row.deptContactPhone }}
               <el-button type="success" icon="el-icon-phone" circle size="mini" v-if="row.deptContactPhone"
-                         style="margin-left: 5px" @click="$store.dispatch('settings/setCallInfoOpen', { open: true, workOrderId: row.workOrderId, dialNumber: row.deptContactPhone })" />
+                style="margin-left: 5px"
+                @click="$store.dispatch('settings/setCallInfoOpen', { open: true, workOrderId: row.workOrderId, dialNumber: row.deptContactPhone })" />
             </el-descriptions-item>
             <el-descriptions-item label="机构业务经办人员"
-                                  v-if="DEPT_TYPE.bankList.includes(this.row.deptType) || DEPT_TYPE.nonBankList.includes(this.row.deptType)">
+              v-if="DEPT_TYPE.bankList.includes(this.row.deptType) || DEPT_TYPE.nonBankList.includes(this.row.deptType)">
               {{ row.deptHandlerName }}
             </el-descriptions-item>
             <el-descriptions-item label="机构业务经办人员联系电话"
-                                  v-if="DEPT_TYPE.bankList.includes(this.row.deptType) || DEPT_TYPE.nonBankList.includes(this.row.deptType)">
+              v-if="DEPT_TYPE.bankList.includes(this.row.deptType) || DEPT_TYPE.nonBankList.includes(this.row.deptType)">
               {{ row.deptHandlerPhone }}
               <el-button type="success" icon="el-icon-phone" circle size="mini" v-if="row.deptHandlerPhone"
-                         style="margin-left: 5px" @click="$store.dispatch('settings/setCallInfoOpen', { open: true, workOrderId: row.workOrderId, dialNumber: row.deptHandlerPhone })" />
+                style="margin-left: 5px"
+                @click="$store.dispatch('settings/setCallInfoOpen', { open: true, workOrderId: row.workOrderId, dialNumber: row.deptHandlerPhone })" />
             </el-descriptions-item>
           </el-descriptions>
 
@@ -89,7 +94,7 @@
                   <el-col :span="24">
                     <el-form-item label="调解记录" prop="record">
                       <el-input v-model="diaputeForm.record" type="textarea" placeholder="请输入调解记录" maxlength="2000"
-                                :autosize="{ minRows: 2, maxRows: 4 }" show-word-limit />
+                        :autosize="{ minRows: 2, maxRows: 4 }" show-word-limit />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -107,10 +112,19 @@
                   <el-col :span="24">
                     <el-form-item label="调解过程中发现的其他问题" prop="otherProblem">
                       <el-input v-model="diaputeForm.otherProblem" type="textarea" placeholder="请输入调解过程中发现的其他问题"
-                                maxlength="2000" :autosize="{ minRows: 2, maxRows: 4 }" show-word-limit />
+                        maxlength="2000" :autosize="{ minRows: 2, maxRows: 4 }" show-word-limit />
                     </el-form-item>
                   </el-col>
                 </el-row>
+                <!-- <el-row class="line-row">
+                  <el-col :span="24">
+                    <el-form-item label="最终达成的其他调解事项" prop="otherAgreedMediationTerms">
+                      <el-input v-model="diaputeForm.otherAgreedMediationTerms" type="textarea"
+                        placeholder="请输入最终达成的其他调解事项" maxlength="2000" :autosize="{ minRows: 2, maxRows: 4 }"
+                        show-word-limit />
+                    </el-form-item>
+                  </el-col>
+                </el-row> -->
               </div>
             </el-form>
             <div class="confirm-btn">
@@ -153,6 +167,8 @@ import {
   saveCallQualityWorkOrder,
   saveCallTranscriptDetail,
   updateCallQualityWorkOrder,
+  getMediationRecordExpandInfo,
+  saveOrUpdateMediationRecordExpand
 } from '@/api/project/disputeMediation';
 import { parseTime } from '@/utils/ruoyi';
 import recordForm from './formInfo.vue';
@@ -198,7 +214,7 @@ export default {
   },
   created() {
     // console.log('🚀 ~ 开始打印 ~ this.$callWs.state.formData :', this.$callWs.state.formData.ola_extn)
-    console.log('🚀 ~ 开始打印 ~ this.$callWs.state.formData :', this.$store.getters.userInfo.seatNum ? this.$store.getters.userInfo.seatNum.toString().slice(5, 8) : '')
+    // console.log('🚀 ~ 开始打印 ~ this.$callWs.state.formData :', this.$store.getters.userInfo.seatNum ? this.$store.getters.userInfo.seatNum.toString().slice(5, 8) : '')
   },
   mounted() {
   },
@@ -276,6 +292,7 @@ export default {
         this.pendingSseEnd = false;
         this.phoneWasConnectedFlag = false;
       }
+
       this.dialogVisible = true;
     },
     cancel() {
@@ -320,15 +337,30 @@ export default {
         const childrenFormData = this.$refs.mediationRecordForm.getFormData();
         childrenFormData.time = parseTime(childrenFormData.time, '{y}-{m}-{d} {h}:{i}:{s}');
         childrenFormData.workOrderId = this.formData.workOrderId;
-        const res = await addMediationRecord(childrenFormData);
-        if (res.code === 200 && this.shouldRunCallQualityLogic()) {
+        const { caseLable, otherAgreedMediationTerms, ...restChildrenFormData } = childrenFormData;
+
+        const res = await addMediationRecord(restChildrenFormData);
+        if (res.code === 200) {
           const recordData = res.data || {};
-          await this.updateCallQualityWorkOrderForMediation({
-            recordId: recordData.mediationRecordId,
-            recordTime: recordData.time,
-          });
+
+          await saveOrUpdateMediationRecordExpand({
+            mediationRecordId: recordData.mediationRecordId,
+            workOrderId: this.row.workOrderId,
+            manageDeptId: this.row.manageDeptId,
+            otherAgreedMediationTerms,
+            caseLable,
+            mediatorUserId: this.row.mediatorUserId
+          })
+          if (this.shouldRunCallQualityLogic()) {
+            await this.updateCallQualityWorkOrderForMediation({
+              recordId: recordData.mediationRecordId,
+              recordTime: recordData.time,
+            });
+          }
+
           this.callQualityRecordLinked = true;
         }
+
         this.$modal.msgSuccess(res.msg);
         this.$emit('callback', 'b', this.row, true);
         this.cancel();
@@ -347,7 +379,7 @@ export default {
         const dialogLeftHeight = dialogLeft.clientHeight || dialogLeft.offsetHeight;
         const rightTHeight = rightT.clientHeight || rightT.offsetHeight;
         rightB.style.height = (dialogLeftHeight - rightTHeight) + 'px';
-        console.log('计算高度:', dialogLeftHeight, rightTHeight, dialogLeftHeight - rightTHeight);
+        // console.log('计算高度:', dialogLeftHeight, rightTHeight, dialogLeftHeight - rightTHeight);
       }
     },
     completedCount() {

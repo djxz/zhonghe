@@ -719,3 +719,50 @@ export function saveOrUpdateDisputeMediationExpand(data) {
     data,
   });
 }
+/** 获取省份列表 */
+export function getProvinces() {
+  return request({
+    url: expandServiceUrl('/project/area/getProvinces'),
+    method: 'post',
+    data: {}
+  });
+}
+
+/** 获取城市列表 */
+export function getCities(code) {
+  return request({
+    url: expandServiceUrl('/project/area/getCities'),
+    method: 'post',
+    data: { code } // {code: code} 的简写
+  });
+}
+// 调解记录新增接口
+export function saveOrUpdateMediationRecordExpand(data) {
+  return request({
+    url: expandServiceUrl('/project/mediationRecordExpand/saveOrUpdateMediationRecordExpand'),
+    method: 'post',
+    data: data
+  });
+}
+// 调解记录获取信息
+export function getMediationRecordExpandInfo(workOrderId) {
+  return request({
+    url: expandServiceUrl(`/project/mediationRecordExpand/getMediationRecordExpandInfo/${workOrderId}`),
+    method: "get",
+  });
+}
+// 回访记录新增接口
+export function saveOrUpdateReturnVisitExpand(data) {
+  return request({
+    url: expandServiceUrl('/project/returnVisitExpand/saveOrUpdateReturnVisitExpand'),
+    method: 'post',
+    data: data
+  });
+}
+// 回访记录获取信息
+export function getReturnVisitExpandInfo(workOrderId) {
+  return request({
+    url: expandServiceUrl(`/project/returnVisitExpand/getReturnVisitExpandInfo/${workOrderId}`),
+    method: "get",
+  });
+}

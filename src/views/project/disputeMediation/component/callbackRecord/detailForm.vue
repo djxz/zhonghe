@@ -1,13 +1,14 @@
 <template>
   <div>
     <div style="height: 500px; overflow-y: auto; padding: 0 20px 60px">
-      <record-form ref="callBackRecordForm" :initial-data="formData" :isEdit="!isEditing" :row="row"/>
+      <record-form ref="callBackRecordForm" :initial-data="formData" :isEdit="!isEditing" :row="row" />
     </div>
 
     <!-- 按钮区域 -->
     <div class="btn">
       <template v-if="!isEditing">
-        <el-button type="primary" @click="startEdit" style="margin-right: 10px" v-if="isDMMediator() && DM_STATUS.DM_STATUS10 === row.status">修 改</el-button>
+        <el-button type="primary" @click="startEdit" style="margin-right: 10px"
+          v-if="isDMMediator() && DM_STATUS.DM_STATUS10 === row.status">修 改</el-button>
       </template>
 
       <template v-else>
@@ -20,13 +21,13 @@
 
 <script>
 /** api */
-import {updateReturnVisit} from '@/api/project/disputeMediation';
+import { updateReturnVisit, saveOrUpdateReturnVisitExpand } from '@/api/project/disputeMediation';
 import recordForm from './formInfo.vue';
-import {DM_STATUS} from "@/views/constant/CommonConstant";
+import { DM_STATUS } from "@/views/constant/CommonConstant";
 
 export default {
   name: '',
-  components: {recordForm},
+  components: { recordForm },
   dicts: ['dm_investigation_place', 'dm_mediation_result', 'sys_yes_no'],
   data() {
     return {
@@ -51,7 +52,10 @@ export default {
         time: data.time || null,
         cause: data.cause || null,
         content: data.content || null,
-        manageDeptId: data.manageDeptId || null
+        manageDeptId: data.manageDeptId || null,
+        executionCompletedFlag: data.executionCompletedFlag || null,
+        financialCauseFailureFlag: data.financialCauseFailureFlag || null,
+        executionTime: data.executionTime || null,
       };
     },
 
@@ -82,7 +86,18 @@ export default {
         const childrenFormData = this.$refs.callBackRecordForm.getFormData();
         childrenFormData.returnVisitId = this.formData.returnVisitId;
         childrenFormData.manageDeptId = this.formData.manageDeptId;
-        const res = await updateReturnVisit(childrenFormData);
+        const { executionCompletedFlag, financialCauseFailureFlag, executionTime, ...restChildrenFormData } = childrenFormData;
+
+        const res = await updateReturnVisit(restChildrenFormData);
+        await saveOrUpdateReturnVisitExpand({
+          mediationRecordId: restChildrenFormData.mediationRecordId,
+          workOrderId: this.row.workOrderId,
+          manageDeptId: this.row.manageDeptId,
+          executionCompletedFlag,
+          financialCauseFailureFlag,
+          executionTime,
+          mediatorUserId: this.row.mediatorUserId
+        })
         this.$modal.msgSuccess(res.msg);
         this.$emit('success');
         this.isEditing = false;

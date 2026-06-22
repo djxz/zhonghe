@@ -2,13 +2,15 @@
   <div>
     <el-col :span="14">
       <div style="overflow-y: auto">
-        <mediation-record-form ref="mediationRecordForm" :initial-data="formData" :isEdit="!isEditing" :row="row"/>
+        <mediation-record-form ref="mediationRecordForm" :initial-data="formData" :isEdit="!isEditing" :row="row" />
       </div>
 
       <!-- 按钮区域 -->
       <div class="btn">
         <template v-if="!isEditing">
-          <el-button type="primary" @click="startEdit" style="margin-right: 10px" v-if="isDMMediator() && (DM_STATUS.DM_STATUS3 === row.status && SYS_YES_NO.sys_yes === row.deptAcceptMediate || DM_STATUS.DM_STATUS4 === row.status || DM_STATUS.DM_STATUS10 === row.status)">修 改</el-button>
+          <el-button type="primary" @click="startEdit" style="margin-right: 10px"
+            v-if="isDMMediator() && (DM_STATUS.DM_STATUS3 === row.status && SYS_YES_NO.sys_yes === row.deptAcceptMediate || DM_STATUS.DM_STATUS4 === row.status || DM_STATUS.DM_STATUS10 === row.status)">修
+            改</el-button>
         </template>
         <template v-else>
           <el-button type="primary" style="margin: 0 10px" @click="submitForm" :loading="btnLoading">保 存</el-button>
@@ -35,7 +37,7 @@
 
 <script>
 /** api */
-import {updateMediationRecord} from '@/api/project/disputeMediation';
+import { updateMediationRecord, saveOrUpdateMediationRecordExpand } from '@/api/project/disputeMediation';
 import MediationRecordForm from './formInfo.vue';
 import { RECORD_RELATION_TYPE, DM_STATUS, SYS_YES_NO } from '@/views/constant/CommonConstant'
 import SoundRecording from '@/views/project/disputeMediation/component/callSound/soundRecording.vue'
@@ -68,6 +70,8 @@ export default {
       this.formData = {
         mediationRecordId: data.mediationRecordId || null,
         workOrderId: data.workOrderId || null,
+        manageDeptId: data.manageDeptId || null,
+
         time: data.time || null,
 
         place: data.place || null,
@@ -86,7 +90,9 @@ export default {
         consumerIdentificationPhoto: data.consumerIdentificationPhoto || null,
         institutionIdentificationPhoto: data.institutionIdentificationPhoto || null,
         scenePhoto: data.scenePhoto || null,
-        attachment: data.attachment || null
+        attachment: data.attachment || null,
+        caseLable: data.caseLable || null,
+        otherAgreedMediationTerms: data.otherAgreedMediationTerms || null,
       };
       this.$refs.soundRecordingRef.open(row, data.callLogList, RECORD_RELATION_TYPE.mediationRecordSound, data.mediationRecordId, data.time);
       this.$refs.videoRecordingRef.open(row, data.mediationRoomVideoList, RECORD_RELATION_TYPE.mediationRecordVideo, data.mediationRecordId, data.time);
@@ -117,7 +123,16 @@ export default {
 
         this.btnLoading = true;
         const childrenFormData = this.$refs.mediationRecordForm.getFormData();
-        const res = await updateMediationRecord(childrenFormData);
+        const { caseLable, otherAgreedMediationTerms, ...restChildrenFormData } = childrenFormData;
+        const res = await updateMediationRecord(restChildrenFormData);
+        await saveOrUpdateMediationRecordExpand({
+          mediationRecordId: restChildrenFormData.mediationRecordId,
+          workOrderId: this.row.workOrderId,
+          manageDeptId: this.row.manageDeptId,
+          otherAgreedMediationTerms,
+          caseLable,
+          mediatorUserId: this.row.mediatorUserId
+        })
         this.$modal.msgSuccess(res.msg);
         this.refresh();
         this.isEditing = false;
