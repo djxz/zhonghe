@@ -351,7 +351,7 @@
                 <el-row>
                     <el-col :span="12">
                         <el-form-item label="自收案件机构类型" prop="institutionType" label-width="140px">
-                            <el-select :disabled="disabled" v-model="form.institutionType" placeholder="" clearable style="width: 100%">
+                            <el-select :disabled="disabled" v-model="form.institutionType" :placeholder="disabled ? '' : '请选择自收案件机构类型'" clearable style="width: 100%">
                                 <el-option v-for="dict in dict.type.dm_institution_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                             </el-select>
                         </el-form-item>
@@ -1339,7 +1339,8 @@ export default {
         'dm_disputed_product_type',
         'dm_channel_type',
         'dm_institution_type',
-        'dm_controversy_cause_type'
+        'dm_controversy_cause_type',
+        'dm_identity_type'
     ],
     props: ['title', 'deptOptions', 'deptMap'],
     data() {
@@ -1477,7 +1478,8 @@ export default {
                 //   { required: true, message: '受理状态为必填项', trigger: 'change' },
                 // ],
                 markCaseType: [{ required: true, message: '案件类型为必填项', trigger: 'change' }],
-                institutionType: [{ required: true, message: '自收案件机构类型为必填项', trigger: 'change' }]
+                institutionType: [{ required: true, message: '自收案件机构类型为必填项', trigger: 'change' }],
+                mediationNumber: [{ required: true, message: '调解次数为必填项', trigger: 'change' }]
             },
             disabled: false,
             // 常量
