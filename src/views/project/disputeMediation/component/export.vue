@@ -16,7 +16,7 @@
                 </el-select>
             </el-form-item>
             <el-form-item label="案件状态" prop="status">
-                <el-select v-model="form.status" placeholder="请选择案件状态" clearable>
+                <el-select v-model="form.status" placeholder="请选择案件状态" clearable @change="handelStatus">
                     <el-option
                         v-for="item in [
                             { label: '调解中', value: '4' },
@@ -28,7 +28,11 @@
                     ></el-option>
                 </el-select>
             </el-form-item>
-            <el-form-item label="工单创建日期" prop="finishTime" label-width="110px">
+            <el-form-item
+                :label="form.status === '10' ? '办结日期' : '调解日期'"
+                prop="finishTime"
+                :rules="[{ required: true, message: form.status === '10' ? '办结日期为必填项' : '调解日期为必填项', trigger: 'change' }]"
+            >
                 <el-date-picker
                     v-model="form.finishTime"
                     type="datetimerange"
@@ -62,8 +66,8 @@ export default {
             },
             rules: {
                 industry: [{ required: true, message: '行业为必填项', trigger: 'change' }],
-                status: [{ required: true, message: '案件状态为必填项', trigger: 'change' }],
-                finishTime: [{ required: true, message: '工单创建日期为必填项', trigger: 'change' }]
+                status: [{ required: true, message: '案件状态为必填项', trigger: 'change' }]
+                // finishTime:
             },
             pickerOptions: {
                 shortcuts: [
@@ -144,6 +148,9 @@ export default {
                     this.visible = false;
                 }
             });
+        },
+        handelStatus() {
+            this.$refs['form'].clearValidate('finishTime');
         }
     }
 };
