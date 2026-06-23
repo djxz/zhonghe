@@ -302,6 +302,11 @@
                                     </el-select>
                                 </el-form-item>
                             </el-col>
+                            <el-col :span="12" v-if="!$store.getters.userInfo.isDMEntryClerk">
+                                <el-form-item label="调解次数" prop="mediationNumber">
+                                    <el-input v-model="form.mediationNumber" show-word-limit placeholder="请输入调解次数" clearable default-value="否" />
+                                </el-form-item>
+                            </el-col>
                         </el-row>
                         <el-row>
                             <el-col :span="24">
@@ -317,7 +322,7 @@
                                 </el-form-item>
                             </el-col>
                         </el-row>
-                        <el-row v-if="DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)">
+                        <el-row v-if="DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType) || DEPT_TYPE.insuranceList.includes(form.deptType)">
                             <el-col :span="12">
                                 <el-form-item label="是否屡投" prop="isRepeatedly">
                                     <el-select v-model="form.isRepeatedly" placeholder="请选择是否屡投" clearable style="width: 100%">
@@ -361,6 +366,15 @@
                             <el-col :span="12">
                                 <el-form-item label="机构类型" prop="type">
                                     <el-cascader v-model="form.deptType" :options="dict.type.dept_type.options" :props="{ expandTrigger: 'hover', emitPath: false }" disabled style="width: 100%" />
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col :span="12">
+                                <el-form-item label="自收案件机构类型" prop="institutionType" label-width="130px">
+                                    <el-select v-model="form.institutionType" placeholder="请选择自收案件机构类型" clearable style="width: 100%">
+                                        <el-option v-for="dict in dict.type.dm_institution_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                                    </el-select>
                                 </el-form-item>
                             </el-col>
                         </el-row>
@@ -639,6 +653,27 @@
                                     </el-select>
                                     <el-select v-else v-model="form.selfCollectionCaseType" placeholder="请选择案件类型" clearable style="width: 100%">
                                         <el-option v-for="dict in dict.type.dm_bank_self_collection_case_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </el-col>
+                            <el-col
+                                :span="12"
+                                v-if="(DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)) && isControversyCaseType(form.selfCollectionCaseType)"
+                            >
+                                <el-form-item
+                                    label="争议事由"
+                                    prop="controversyCause"
+                                    :rules="[
+                                        {
+                                            required:
+                                                (DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)) && isControversyCaseType(form.selfCollectionCaseType),
+                                            message: '争议事由为必填项',
+                                            trigger: 'change'
+                                        }
+                                    ]"
+                                >
+                                    <el-select v-model="form.controversyCause" placeholder="请选择争议事由" clearable style="width: 100%">
+                                        <el-option v-for="dict in dict.type.dm_controversy_cause_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                                     </el-select>
                                 </el-form-item>
                             </el-col>
@@ -1592,7 +1627,9 @@ export default {
         'dm_identity_type',
         'dm_disputed_product_type',
         'dm_bank_self_collection_case_type',
-        'dm_insurance_self_collection_case_type'
+        'dm_insurance_self_collection_case_type',
+        'dm_institution_type',
+        'dm_controversy_cause_type'
     ],
     props: ['deptOptions', 'deptMap'],
     data() {
@@ -1607,6 +1644,7 @@ export default {
                 channelType: [{ required: true, message: '渠道类型为必填项', trigger: 'change' }],
                 mediatorUserId: [{ required: true, message: '调解员为必填项', trigger: 'change' }],
                 isSelf: [{ required: true, message: '是否消费者本人为必填项', trigger: 'change' }],
+                institutionType: [{ required: true, message: '自收案件机构类型为必填项', trigger: 'change' }],
                 // agentCertNum: [
                 //   { required: this.form.agentCertType, message: '代理人证件号码为必填项', trigger: 'blur' },
                 //   { validator: , trigger: 'blur' },
@@ -1632,9 +1670,10 @@ export default {
                         trigger: 'blur'
                     }
                 ],
+                mediationNumber: [{ required: true, message: '调解次数为必填项', trigger: 'change' }],
                 identityType: [{ required: true, message: '消费者身份类型为必填项', trigger: 'change' }],
                 // age: [{ required: this.form.consumerIdentityType !== DM_IDENTITY_TYPE.LEGAL, message: '消费者年龄为必填项', trigger: 'blur' }],
-                isRepeatedly: [{ required: false, message: '是否屡投为必填项', trigger: 'change' }],
+                isRepeatedly: [{ required: true, message: '是否屡投为必填项', trigger: 'change' }],
                 isBlackIndustry: [{ required: this.$store.getters.userInfo.isDMEntryClerk || this.$store.getters.userInfo.isDMMediator, message: '是否涉及黑产为必填项', trigger: 'change' }],
                 isThirdPartyAgent: [{ required: this.$store.getters.userInfo.isDMEntryClerk || this.$store.getters.userInfo.isDMMediator, message: '是否涉及第三方代理为必填项', trigger: 'change' }],
                 isHighRisk: [{ required: this.$store.getters.userInfo.isDMEntryClerk || this.$store.getters.userInfo.isDMMediator, message: '是否高危客群为必填项', trigger: 'change' }],
@@ -1748,7 +1787,19 @@ export default {
                 1: ['4']
                 // 其他身份类型可根据需要配置
             },
-            areaOptions: [] // 省市数据源
+            areaOptions: [], // 省市数据源
+            controversyCaseTypes: [
+                'bank_3', // 贷款-房屋抵押贷款（商业/公积金）
+                'bank_4', // 贷款-汽车抵押贷款
+                'bank_5', // 贷款-质押贷款(大额存单/知识产权)
+                'bank_6', // 贷款-个人消费贷款
+                'bank_7', // 贷款-个人经营贷款
+                'bank_8', // 贷款-固定资产贷款
+                'bank_9', // 贷款-流动资金贷款
+                'bank_10', // 信用卡-息费、分期
+                'bank_11', // 信用卡-调整额度、协商还款
+                'bank_12' // 信用卡-催收、盗刷
+            ]
         };
     },
 
@@ -2796,6 +2847,8 @@ export default {
                 consumerIdentityType: null,
                 identityType: null,
                 email: null,
+                mediationNumber: '否',
+                institutionType: null,
                 disputedProductType: null,
                 selfCollectionCaseType: null,
                 channelType: null,
@@ -2982,6 +3035,8 @@ export default {
                     cityName,
                     remark,
                     selfCollectionCaseType,
+                    mediationNumber,
+                    institutionType,
                     ...restForm
                 } = this.form;
 
@@ -3000,7 +3055,9 @@ export default {
                         provinceName,
                         cityCode,
                         cityName,
-                        remark
+                        remark,
+                        institutionType,
+                        mediationNumber
                     });
                     if (this.shouldRunCallQualityLogic()) {
                         await this.updateCallQualityWorkOrderForAddMediation({
@@ -3516,6 +3573,10 @@ export default {
             this.form.provinceName = null;
             this.form.cityCode = null;
             this.form.cityName = null;
+        },
+        isControversyCaseType(caseType) {
+            if (!caseType) return false;
+            return this.controversyCaseTypes.includes(caseType);
         }
     }
 };

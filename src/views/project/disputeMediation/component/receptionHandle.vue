@@ -259,7 +259,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row v-if="DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)">
+        <el-row v-if="DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)  || DEPT_TYPE.insuranceList.includes(form.deptType)">
           <el-col :span="12">
             <el-form-item label="是否屡投" prop="isRepeatedly">
               <el-select

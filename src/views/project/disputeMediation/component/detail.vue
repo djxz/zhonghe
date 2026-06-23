@@ -175,7 +175,7 @@
                     <el-row>
                         <el-col :span="12">
                             <el-form-item label="邮箱" prop="email">
-                                <el-input v-model="form.email" maxlength="26" readonly />
+                                <el-input v-model="form.email" readonly />
                             </el-form-item>
                         </el-col>
                         <el-col :span="12" v-if="DEPT_TYPE.insuranceList.includes(form.deptType)">
@@ -183,6 +183,11 @@
                                 <el-select v-model="form.identityType" placeholder="" disabled style="width: 100%">
                                     <el-option v-for="dict in dict.type.dm_identity_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                                 </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12">
+                            <el-form-item label="调解次数" prop="mediationNumber">
+                                <el-input v-model="form.mediationNumber" readonly />
                             </el-form-item>
                         </el-col>
                     </el-row>
@@ -200,7 +205,7 @@
                             </el-form-item>
                         </el-col>
                     </el-row>
-                    <el-row v-if="DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)">
+                    <el-row v-if="DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType) || DEPT_TYPE.insuranceList.includes(form.deptType)">
                         <el-col :span="12">
                             <el-form-item label="是否屡投" prop="isRepeatedly">
                                 <el-select v-model="form.isRepeatedly" disabled style="width: 100%" placeholder="">
@@ -256,6 +261,15 @@
                         <el-col :span="12">
                             <el-form-item :label="form.oldDeptId && !$store.getters.userInfo.isDMInstitution ? '实际机构类型' : '机构类型'" prop="type">
                                 <el-cascader v-model="form.deptType" :options="dict.type.dept_type.options" :props="{ expandTrigger: 'hover', emitPath: false }" disabled style="width: 100%" />
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="12">
+                            <el-form-item label="自收案件机构类型" prop="institutionType" label-width="130px">
+                                <el-select disabled v-model="form.institutionType" placeholder="" clearable style="width: 100%">
+                                    <el-option v-for="dict in dict.type.dm_institution_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                                </el-select>
                             </el-form-item>
                         </el-col>
                     </el-row>
@@ -424,6 +438,13 @@
                                 </el-select>
                                 <el-select v-else v-model="form.selfCollectionCaseType" placeholder="" clearable style="width: 100%" disabled>
                                     <el-option v-for="dict in dict.type.dm_bank_self_collection_case_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12" v-if="(DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)) && isControversyCaseType(form.selfCollectionCaseType)">
+                            <el-form-item label="争议事由" prop="controversyCause">
+                                <el-select v-model="form.controversyCause" placeholder="" clearable style="width: 100%" disabled>
+                                    <el-option v-for="dict in dict.type.dm_controversy_cause_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                                 </el-select>
                             </el-form-item>
                         </el-col>
@@ -830,7 +851,9 @@ export default {
         'dm_disputed_product_type',
         'dm_channel_type',
         'dm_bank_self_collection_case_type',
-        'dm_insurance_self_collection_case_type'
+        'dm_insurance_self_collection_case_type',
+        'dm_institution_type',
+        'dm_controversy_cause_type'
     ],
     props: ['title', 'deptOptions', 'deptMap'],
     data() {
@@ -847,7 +870,19 @@ export default {
             CERT_TYPE: CERT_TYPE, // 身份证类型,
             DM_IDENTITY_TYPE: DM_IDENTITY_TYPE, // 消费者身份类型,
             formatMarkCaseTypeLabel: formatMarkCaseTypeLabel,
-            areaOptions: [] // 省市数据源
+            areaOptions: [], // 省市数据源
+            controversyCaseTypes: [
+                'bank_3', // 贷款-房屋抵押贷款（商业/公积金）
+                'bank_4', // 贷款-汽车抵押贷款
+                'bank_5', // 贷款-质押贷款(大额存单/知识产权)
+                'bank_6', // 贷款-个人消费贷款
+                'bank_7', // 贷款-个人经营贷款
+                'bank_8', // 贷款-固定资产贷款
+                'bank_9', // 贷款-流动资金贷款
+                'bank_10', // 信用卡-息费、分期
+                'bank_11', // 信用卡-调整额度、协商还款
+                'bank_12' // 信用卡-催收、盗刷
+            ]
         };
     },
     watch: {
@@ -905,6 +940,14 @@ export default {
                     if (res.data != null && res.data.email != null && res.data.email !== '') {
                         this.$set(this.form, 'email', String(res.data.email));
                     }
+                    if (res.data != null && res.data.institutionType != null && res.data.institutionType !== '') {
+                        this.$set(this.form, 'institutionType', String(res.data.institutionType));
+                    }
+                    if (res.data != null && res.data.mediationNumber != null && res.data.mediationNumber !== '') {
+                        this.$set(this.form, 'mediationNumber', String(res.data.mediationNumber));
+                    } else {
+                        this.$set(this.form, 'mediationNumber', '否');
+                    }
                     if (res.data != null && res.data.remark != null && res.data.remark !== '') {
                         this.$set(this.form, 'remark', String(res.data.remark));
                     }
@@ -925,6 +968,9 @@ export default {
                     }
                     if (res.data != null && res.data.selfCollectionCaseType != null && res.data.selfCollectionCaseType !== '') {
                         this.$set(this.form, 'selfCollectionCaseType', String(res.data.selfCollectionCaseType));
+                    }
+                    if (res.data != null && res.data.controversyCause != null && res.data.controversyCause !== '') {
+                        this.$set(this.form, 'controversyCause', String(res.data.controversyCause));
                     }
                     if (res.data != null && res.data.provinceCode != null && res.data.provinceCode) {
                         // 1. 动态构建级联选择器的回显数组
@@ -1027,6 +1073,10 @@ export default {
                 console.error('获取城市失败:', error);
                 resolve([]);
             }
+        },
+        isControversyCaseType(caseType) {
+            if (!caseType) return false;
+            return this.controversyCaseTypes.includes(caseType);
         }
     }
 };
