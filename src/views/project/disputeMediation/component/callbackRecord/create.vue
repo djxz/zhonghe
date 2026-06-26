@@ -14,7 +14,7 @@
 </template>
 
 <script>
-import { addReturnVisit, saveOrUpdateReturnVisitExpand } from '@/api/project/disputeMediation';
+import { addReturnVisit, saveOrUpdateReturnVisitExpand, getFulfillmentExpandListByWorkOrderId } from '@/api/project/disputeMediation';
 import { parseTime } from '@/utils/ruoyi';
 import recordForm from './formInfo.vue';
 
@@ -30,17 +30,22 @@ export default {
             dialogVisible: false,
             btnLoading: false,
             formData: {
-                workOrderId: null
+                workOrderId: null,
+                content: null
             }
         };
     },
     created() {},
     mounted() {},
     methods: {
-        open(row) {
+        async open(row) {
             this.row = row;
             this.formData.workOrderId = row.workOrderId;
             this.dialogVisible = true;
+            const res = await getFulfillmentExpandListByWorkOrderId(row.workOrderId);
+            if (res.code === 200 && res.data != null) {
+                this.formData.content = res.data.map(item => item.performanceRegistrationReason).join(';');
+            }
         },
 
         cancel() {
