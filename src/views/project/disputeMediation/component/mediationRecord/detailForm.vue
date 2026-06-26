@@ -129,7 +129,6 @@ export default {
 
                 this.btnLoading = true;
                 const childrenFormData = this.$refs.mediationRecordForm.getFormData();
-                childrenFormData.place = childrenFormData.place.join(',');
                 const { caseLable, otherAgreedMediationTerms, ...restChildrenFormData } = childrenFormData;
                 const res = await updateMediationRecord(restChildrenFormData);
                 await saveOrUpdateMediationRecordExpand({

@@ -250,10 +250,7 @@ export default {
             phoneWasConnectedFlag: false
         };
     },
-    created() {
-        // console.log('🚀 ~ 开始打印 ~ this.$callWs.state.formData :', this.$callWs.state.formData.ola_extn)
-        // console.log('🚀 ~ 开始打印 ~ this.$callWs.state.formData :', this.$store.getters.userInfo.seatNum ? this.$store.getters.userInfo.seatNum.toString().slice(5, 8) : '')
-    },
+    created() {},
     mounted() {},
     watch: {
         dialogVisible(nVal, oVal) {
@@ -314,7 +311,6 @@ export default {
     methods: {
         open(row, form) {
             this.row = row;
-            console.log('🚀 ~ row ~ :', row);
             if (form) {
                 this.formData = form;
             } else {
@@ -375,7 +371,6 @@ export default {
                 const childrenFormData = this.$refs.mediationRecordForm.getFormData();
                 childrenFormData.time = parseTime(childrenFormData.time, '{y}-{m}-{d} {h}:{i}:{s}');
                 childrenFormData.workOrderId = this.formData.workOrderId;
-                childrenFormData.place = childrenFormData.place.join(',');
 
                 const { caseLable, otherAgreedMediationTerms, ...restChildrenFormData } = childrenFormData;
 

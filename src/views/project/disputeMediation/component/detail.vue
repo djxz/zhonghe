@@ -258,18 +258,22 @@
                                 <treeselect v-model="form.deptId" :options="deptOptions" :normalizer="normalizer" disabled @input="deptChange" />
                             </el-form-item>
                         </el-col>
-                        <el-col :span="12">
+                        <!-- <el-col :span="12">
                             <el-form-item :label="form.oldDeptId && !$store.getters.userInfo.isDMInstitution ? '实际机构类型' : '机构类型'" prop="type">
                                 <el-cascader v-model="form.deptType" :options="dict.type.dept_type.options" :props="{ expandTrigger: 'hover', emitPath: false }" disabled style="width: 100%" />
                             </el-form-item>
-                        </el-col>
-                    </el-row>
-                    <el-row>
+                        </el-col> -->
                         <el-col :span="12">
-                            <el-form-item label="自收案件机构类型" prop="institutionType" label-width="130px">
-                                <el-select disabled v-model="form.institutionType" placeholder="" clearable style="width: 100%">
-                                    <el-option v-for="dict in dict.type.dm_institution_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
-                                </el-select>
+                            <el-form-item label="机构类型" prop="institutionType">
+                                <el-cascader
+                                    disabled
+                                    v-model="form.institutionType"
+                                    :options="DEPT_TYPE.insuranceList.includes(form.deptType) ? filteredDeptTypeOptions : dict.type.dm_institution_type"
+                                    :props="{ expandTrigger: 'hover', emitPath: false }"
+                                    placeholder=""
+                                    clearable
+                                    style="width: 100%"
+                                />
                             </el-form-item>
                         </el-col>
                     </el-row>
@@ -430,25 +434,7 @@
                             </el-form-item>
                         </el-col>
                     </el-row>
-                    <el-row v-if="DEPT_TYPE.insuranceList.includes(form.deptType) || DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)">
-                        <el-col :span="12">
-                            <el-form-item label="案件类型" prop="selfCollectionCaseType">
-                                <el-select v-if="DEPT_TYPE.insuranceList.includes(form.deptType)" v-model="form.selfCollectionCaseType" placeholder="" clearable style="width: 100%" disabled>
-                                    <el-option v-for="dict in dict.type.dm_insurance_self_collection_case_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
-                                </el-select>
-                                <el-select v-else v-model="form.selfCollectionCaseType" placeholder="" clearable style="width: 100%" disabled>
-                                    <el-option v-for="dict in dict.type.dm_bank_self_collection_case_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
-                                </el-select>
-                            </el-form-item>
-                        </el-col>
-                        <el-col :span="12" v-if="(DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)) && isControversyCaseType(form.selfCollectionCaseType)">
-                            <el-form-item label="争议事由" prop="controversyCause">
-                                <el-select v-model="form.controversyCause" placeholder="" clearable style="width: 100%" disabled>
-                                    <el-option v-for="dict in dict.type.dm_controversy_cause_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
-                                </el-select>
-                            </el-form-item>
-                        </el-col>
-                    </el-row>
+
                     <el-row>
                         <el-col :span="24">
                             <el-form-item label="投诉内容" prop="complaintContent">
@@ -585,8 +571,14 @@
                         </el-form-item>
                     </el-col>
                 </el-row>
-
-                <el-row v-if="!$store.getters.userInfo.isDMInstitution">
+                <el-row>
+                    <el-col v-if="DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)" :span="12">
+                        <el-form-item label="协议减免金额（元）" prop="agreedReductionAmount" label-width="140px">
+                            <el-input v-model="form.agreedReductionAmount" placeholder="" maxlength="12" show-word-limit clearable readonly />
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row v-if="DEPT_TYPE.insuranceList.includes(form.deptType) || DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)">
                     <el-col :span="12">
                         <el-form-item label="案件类型" prop="selfCollectionCaseType">
                             <el-select v-if="DEPT_TYPE.insuranceList.includes(form.deptType)" v-model="form.selfCollectionCaseType" placeholder="" clearable style="width: 100%" disabled>
@@ -597,11 +589,11 @@
                             </el-select>
                         </el-form-item>
                     </el-col>
-                </el-row>
-                <el-row>
-                    <el-col v-if="DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)" :span="12">
-                        <el-form-item label="协议减免金额（元）" prop="agreedReductionAmount" label-width="140px">
-                            <el-input v-model="form.agreedReductionAmount" placeholder="" maxlength="12" show-word-limit clearable readonly />
+                    <el-col :span="12" v-if="(DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)) && isControversyCaseType(form.selfCollectionCaseType)">
+                        <el-form-item label="争议事由" prop="controversyCause">
+                            <el-select v-model="form.controversyCause" placeholder="" clearable style="width: 100%" disabled>
+                                <el-option v-for="dict in dict.type.dm_controversy_cause_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                            </el-select>
                         </el-form-item>
                     </el-col>
                 </el-row>
@@ -822,6 +814,29 @@ export default {
     computed: {
         DM_FINISH_TYPE() {
             return DM_FINISH_TYPE;
+        },
+        filteredDeptTypeOptions() {
+            if (!this.dict.type.dept_type?.options) {
+                return [];
+            }
+            const options = this.dict.type.dept_type.options;
+            const deptType = this.form.deptType;
+
+            if (DEPT_TYPE.insuranceList.includes(deptType)) {
+                // 查找保险机构
+                const insuranceNode = options.find(item => {
+                    return item.label === '保险机构' || item.dictLabel === '保险机构' || (Array.isArray(item.value) && item.value.some(v => String(v).startsWith('insurance')));
+                });
+
+                if (insuranceNode) {
+                    const result = [insuranceNode];
+                    return result;
+                }
+
+                return [];
+            }
+
+            return [];
         }
     },
     dicts: [
@@ -930,6 +945,9 @@ export default {
                 markCaseType: row.markCaseType || '20'
             };
             this.visible = true;
+            if (this.DEPT_TYPE.insuranceList.includes(this.form.deptType)) {
+                this.filteredDeptTypeOptions;
+            }
             getDisputeMediationExpandInfo(row.workOrderId)
                 .then(res => {
                     if (res.data != null && res.data.markCaseType != null && res.data.markCaseType !== '') {

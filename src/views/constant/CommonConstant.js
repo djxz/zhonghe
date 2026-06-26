@@ -282,4 +282,9 @@ export const DM_IDENTITY_TYPE = {
   NATURAL: "0", // 自然人
   LEGAL: "1", // 法人
 };
+// 渠道类型
+export const DM_CHANNEL_TYPE = {
+  MONITOR: "0", // 监管信访先行引导
+  APPLY: "1", // 当事人自行申请调解
+};
 

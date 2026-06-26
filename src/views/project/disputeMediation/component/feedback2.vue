@@ -219,16 +219,22 @@
                         <treeselect v-model="form.deptId" :options="deptOptions" :normalizer="normalizer" disabled />
                     </el-form-item>
                 </el-col>
-                <el-col :span="12" v-if="DEPT_TYPE.insuranceList.includes(form.deptType)">
+                <!-- <el-col :span="12" v-if="DEPT_TYPE.insuranceList.includes(form.deptType)">
                     <el-form-item label="机构类型" prop="type">
                         <el-cascader v-model="form.deptType" :options="dict.type.dept_type.options" :props="{ expandTrigger: 'hover', emitPath: false }" disabled style="width: 100%" />
                     </el-form-item>
-                </el-col>
+                </el-col> -->
                 <el-col :span="12">
-                    <el-form-item label="自收案件机构类型" prop="institutionType" :rules="[{ required: true, message: '自收案件机构类型为必填项', trigger: 'change' }]" label-width="135px">
-                        <el-select v-model="form.institutionType" style="width: 100%" clearable :placeholder="disabled ? '' : '请选择自收案件机构类型'" :disabled="disabled">
-                            <el-option v-for="dict in dict.type.dm_institution_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
-                        </el-select>
+                    <el-form-item label="机构类型" prop="institutionType" :rules="[{ required: true, message: '机构类型为必填项', trigger: 'change' }]">
+                        <el-cascader
+                            v-model="form.institutionType"
+                            :disabled="disabled"
+                            :options="DEPT_TYPE.insuranceList.includes(form.deptType) ? filteredDeptTypeOptions : dict.type.dm_institution_type"
+                            :props="{ expandTrigger: 'hover', emitPath: false }"
+                            :placeholder="disabled ? '' : '请选择机构类型'"
+                            clearable
+                            style="width: 100%"
+                        />
                     </el-form-item>
                 </el-col>
             </el-row>
@@ -394,6 +400,10 @@
                             :props="{
                                 lazy: true,
                                 lazyLoad: (node, resolve) => {
+                                    if (!node) {
+                                        resolve([]);
+                                        return;
+                                    }
                                     if (node.level === 0) {
                                         this.loadProvinces(node, resolve);
                                     } else {
@@ -430,42 +440,6 @@
                     >
                         <el-select v-model="form.disputedProductType" clearable :disabled="disabled" :placeholder="disabled ? '' : '请选择产品/服务'" style="width: 100%">
                             <el-option v-for="dict in dict.type.dm_disputed_product_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
-                        </el-select>
-                    </el-form-item>
-                </el-col>
-            </el-row>
-            <el-row>
-                <el-col :span="12">
-                    <el-form-item label="案件类型" prop="selfCollectionCaseType" :rules="[{ required: true, message: '案件类型为必填项', trigger: 'change' }]">
-                        <el-select
-                            v-if="DEPT_TYPE.insuranceList.includes(form.deptType)"
-                            v-model="form.selfCollectionCaseType"
-                            :placeholder="disabled ? '' : '请选择案件类型'"
-                            clearable
-                            style="width: 100%"
-                            :disabled="disabled"
-                        >
-                            <el-option v-for="dict in dict.type.dm_insurance_self_collection_case_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
-                        </el-select>
-                        <el-select v-else v-model="form.selfCollectionCaseType" :placeholder="disabled ? '' : '请选择案件类型'" clearable style="width: 100%" :disabled="disabled">
-                            <el-option v-for="dict in dict.type.dm_bank_self_collection_case_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
-                        </el-select>
-                    </el-form-item>
-                </el-col>
-                <el-col :span="12" v-if="(DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)) && isControversyCaseType(form.selfCollectionCaseType)">
-                    <el-form-item
-                        label="争议事由"
-                        prop="controversyCause"
-                        :rules="[
-                            {
-                                required: (DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)) && isControversyCaseType(form.selfCollectionCaseType),
-                                message: '争议事由为必填项',
-                                trigger: 'change'
-                            }
-                        ]"
-                    >
-                        <el-select v-model="form.controversyCause" :disabled="disabled" :placeholder="disabled ? '' : '请选择争议事由'" clearable style="width: 100%">
-                            <el-option v-for="dict in dict.type.dm_controversy_cause_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                         </el-select>
                     </el-form-item>
                 </el-col>
@@ -544,6 +518,42 @@
                     <el-form-item label="履约类型" prop="enforceAgreementType" :rules="[{ required: SYS_YES_NO.sys_no !== form.deptAcceptMediate, message: '履约类型为必填项', trigger: 'change' }]">
                         <el-select v-model="form.enforceAgreementType" :placeholder="disabled ? '' : '请选择履约类型'" clearable style="width: 100%" :disabled="disabled">
                             <el-option v-for="dict in dict.type.dm_enforce_agreement_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="12">
+                    <el-form-item label="案件类型" prop="selfCollectionCaseType" :rules="[{ required: true, message: '案件类型为必填项', trigger: 'change' }]">
+                        <el-select
+                            v-if="DEPT_TYPE.insuranceList.includes(form.deptType)"
+                            v-model="form.selfCollectionCaseType"
+                            :placeholder="disabled ? '' : '请选择案件类型'"
+                            clearable
+                            style="width: 100%"
+                            :disabled="disabled"
+                        >
+                            <el-option v-for="dict in dict.type.dm_insurance_self_collection_case_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                        </el-select>
+                        <el-select v-else v-model="form.selfCollectionCaseType" :placeholder="disabled ? '' : '请选择案件类型'" clearable style="width: 100%" :disabled="disabled">
+                            <el-option v-for="dict in dict.type.dm_bank_self_collection_case_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="12" v-if="(DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)) && isControversyCaseType(form.selfCollectionCaseType)">
+                    <el-form-item
+                        label="争议事由"
+                        prop="controversyCause"
+                        :rules="[
+                            {
+                                required: (DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)) && isControversyCaseType(form.selfCollectionCaseType),
+                                message: '争议事由为必填项',
+                                trigger: 'change'
+                            }
+                        ]"
+                    >
+                        <el-select v-model="form.controversyCause" :disabled="disabled" :placeholder="disabled ? '' : '请选择争议事由'" clearable style="width: 100%">
+                            <el-option v-for="dict in dict.type.dm_controversy_cause_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                         </el-select>
                     </el-form-item>
                 </el-col>
@@ -1185,7 +1195,9 @@ export default {
             this.reset();
             this.row = row;
             this.form = { ...row };
-
+            if (this.DEPT_TYPE.insuranceList.includes(this.form.deptType)) {
+                this.filteredDeptTypeOptions;
+            }
             if (!this.form.solution) {
                 this.form.solution = `一、自查情况:
 二、调解方案:

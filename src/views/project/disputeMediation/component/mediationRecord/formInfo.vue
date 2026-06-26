@@ -6,7 +6,6 @@
                     <el-form-item label="地点" prop="place" :rules="[{ required: !this.isEdit && true, message: '请选择地点', trigger: 'change' }]">
                         <el-select
                             v-model="formInfo.place"
-                            multiple
                             :placeholder="DM_STATUS.DM_STATUS10 === this.row.status || isEdit ? '' : '请选择地点'"
                             style="width: 100%"
                             :disabled="DM_STATUS.DM_STATUS10 === this.row.status || isEdit"
@@ -439,7 +438,7 @@ export default {
                 // 参加人
                 participant: null,
                 // 地点
-                place: [],
+                place: null,
                 // 调解记录
                 record: null,
                 // 调解结果
@@ -485,19 +484,10 @@ export default {
         },
         initialData: {
             handler(newVal) {
-                if (newVal && newVal.place) {
-                    this.formInfo = {
-                        ...this.formInfo,
-                        ...newVal,
-                        place: newVal.place.split(',')
-                    };
-                } else {
-                    // 如果没有 place 数据，则只合并其他数据
-                    this.formInfo = {
-                        ...this.formInfo,
-                        ...newVal
-                    };
-                }
+                this.formInfo = {
+                    ...this.formInfo,
+                    ...newVal
+                };
 
                 // if (!this.formInfo.mediationRecordId && !this.formInfo.time) {
                 //   this.formInfo.time = new Date();

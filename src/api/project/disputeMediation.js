@@ -766,3 +766,18 @@ export function getReturnVisitExpandInfo(workOrderId) {
     method: "get",
   });
 }
+// 履约登记新增接口
+export function saveOrUpdateFulfillmentExpand(data) {
+  return request({
+    url: expandServiceUrl('/project/fulfillmentExpand/saveOrUpdateFulfillmentExpand'),
+    method: 'post',
+    data: data
+  });
+}
+// 履约登记获取信息
+export function getFulfillmentExpandListByWorkOrderId(workOrderId) {
+  return request({
+    url: expandServiceUrl(`/project/fulfillmentExpand/getFulfillmentExpandListByWorkOrderId/${workOrderId}`),
+    method: "get",
+  });
+}

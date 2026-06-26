@@ -37,14 +37,7 @@
                 <el-row>
                     <el-col :span="12">
                         <el-form-item label="渠道类型" prop="channelType">
-                            <el-select
-                                v-model="form.channelType"
-                                :disabled="disabled"
-                                placeholder=""
-                                clearable
-                                style="width: 100%"
-                                :rules="disabled ? [] : [{ required: true, message: '渠道类型为必填项', trigger: 'change' }]"
-                            >
+                            <el-select v-model="form.channelType" disabled placeholder="请选择渠道类型" clearable style="width: 100%">
                                 <el-option v-for="dict in dict.type.dm_channel_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                             </el-select>
                         </el-form-item>
@@ -339,21 +332,25 @@
                 <el-row>
                     <el-col :span="12">
                         <el-form-item label="机构名称" prop="deptId">
-                            <treeselect v-model="form.deptId" :options="deptOptions" :normalizer="normalizer" placeholder="请选择机构" @input="deptChange" disabled />
+                            <treeselect v-model="form.deptId" :options="deptOptions" :normalizer="normalizer" placeholder="请选择机构" @input="deptChange" disabled @click="deptChangeClick" />
                         </el-form-item>
                     </el-col>
-                    <el-col :span="12">
+                    <!-- <el-col :span="12">
                         <el-form-item label="机构类型" prop="type">
                             <el-cascader v-model="form.deptType" :options="dict.type.dept_type.options" :props="{ expandTrigger: 'hover', emitPath: false }" disabled style="width: 100%" />
                         </el-form-item>
-                    </el-col>
-                </el-row>
-                <el-row>
+                    </el-col> -->
                     <el-col :span="12">
-                        <el-form-item label="自收案件机构类型" prop="institutionType" label-width="140px">
-                            <el-select :disabled="disabled" v-model="form.institutionType" :placeholder="disabled ? '' : '请选择自收案件机构类型'" clearable style="width: 100%">
-                                <el-option v-for="dict in dict.type.dm_institution_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
-                            </el-select>
+                        <el-form-item label="机构类型" prop="institutionType">
+                            <el-cascader
+                                v-model="form.institutionType"
+                                :disabled="disabled"
+                                :options="DEPT_TYPE.insuranceList.includes(form.deptType) ? filteredDeptTypeOptions : dict.type.dm_institution_type"
+                                :props="{ expandTrigger: 'hover', emitPath: false }"
+                                :placeholder="disabled ? '' : '请选择机构类型'"
+                                clearable
+                                style="width: 100%"
+                            />
                         </el-form-item>
                     </el-col>
                 </el-row>
@@ -608,6 +605,10 @@
                                 :props="{
                                     lazy: true,
                                     lazyLoad: (node, resolve) => {
+                                        if (!node) {
+                                            resolve([]);
+                                            return;
+                                        }
                                         if (node.level === 0) {
                                             this.loadProvinces(node, resolve);
                                         } else {
@@ -980,42 +981,6 @@
                 </el-col>
             </el-row>
             <el-row>
-                <el-col :span="12">
-                    <el-form-item label="案件类型" prop="selfCollectionCaseType" :rules="disabled ? [] : [{ required: true, message: '案件类型为必填项', trigger: 'change' }]">
-                        <el-select
-                            v-if="DEPT_TYPE.insuranceList.includes(form.deptType)"
-                            v-model="form.selfCollectionCaseType"
-                            :placeholder="disabled ? '' : '请选择案件类型'"
-                            clearable
-                            style="width: 100%"
-                            :disabled="disabled"
-                        >
-                            <el-option v-for="dict in dict.type.dm_insurance_self_collection_case_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
-                        </el-select>
-                        <el-select v-else v-model="form.selfCollectionCaseType" :placeholder="disabled ? '' : '请选择案件类型'" clearable style="width: 100%" :disabled="disabled">
-                            <el-option v-for="dict in dict.type.dm_bank_self_collection_case_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
-                        </el-select>
-                    </el-form-item>
-                </el-col>
-                <el-col :span="12" v-if="(DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)) && isControversyCaseType(form.selfCollectionCaseType)">
-                    <el-form-item
-                        label="争议事由"
-                        prop="controversyCause"
-                        :rules="[
-                            {
-                                required: (DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)) && isControversyCaseType(form.selfCollectionCaseType),
-                                message: '争议事由为必填项',
-                                trigger: 'change'
-                            }
-                        ]"
-                    >
-                        <el-select v-model="form.controversyCause" :disabled="disabled" :placeholder="disabled ? '' : '请选择争议事由'" clearable style="width: 100%">
-                            <el-option v-for="dict in dict.type.dm_controversy_cause_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
-                        </el-select>
-                    </el-form-item>
-                </el-col>
-            </el-row>
-            <el-row>
                 <el-col :span="12" v-if="(DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)) && form.deptAcceptMediate">
                     <el-form-item
                         label="履约类型"
@@ -1048,6 +1013,61 @@
                             clearable
                             :disabled="disabled"
                         />
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="12">
+                    <el-form-item
+                        label="案件类型"
+                        prop="selfCollectionCaseType"
+                        :rules="
+                            disabled
+                                ? []
+                                : [
+                                      {
+                                          required:
+                                              !this.isMediator &&
+                                              (DEPT_TYPE.insuranceList.includes(form.deptType) || DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)),
+                                          message: '案件类型为必填项',
+                                          trigger: 'change'
+                                      }
+                                  ]
+                        "
+                    >
+                        <el-select
+                            v-if="DEPT_TYPE.insuranceList.includes(form.deptType)"
+                            v-model="form.selfCollectionCaseType"
+                            :placeholder="disabled ? '' : '请选择案件类型'"
+                            clearable
+                            style="width: 100%"
+                            :disabled="disabled"
+                        >
+                            <el-option v-for="dict in dict.type.dm_insurance_self_collection_case_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                        </el-select>
+                        <el-select v-else v-model="form.selfCollectionCaseType" :placeholder="disabled ? '' : '请选择案件类型'" clearable style="width: 100%" :disabled="disabled">
+                            <el-option v-for="dict in dict.type.dm_bank_self_collection_case_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="12" v-if="(DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)) && isControversyCaseType(form.selfCollectionCaseType)">
+                    <el-form-item
+                        label="争议事由"
+                        prop="controversyCause"
+                        :rules="[
+                            {
+                                required:
+                                    !this.isMediator &&
+                                    (DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)) &&
+                                    isControversyCaseType(form.selfCollectionCaseType),
+                                message: '争议事由为必填项',
+                                trigger: 'change'
+                            }
+                        ]"
+                    >
+                        <el-select v-model="form.controversyCause" :disabled="disabled" :placeholder="disabled ? '' : '请选择争议事由'" clearable style="width: 100%">
+                            <el-option v-for="dict in dict.type.dm_controversy_cause_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                        </el-select>
                     </el-form-item>
                 </el-col>
             </el-row>
@@ -1314,6 +1334,7 @@ import {
     MARK_CASE_TYPE_LABEL,
     DM_IDENTITY_TYPE
 } from '@/views/constant/CommonConstant.js';
+import { mapGetters } from 'vuex';
 
 export default {
     components: { Treeselect },
@@ -1343,6 +1364,42 @@ export default {
         'dm_identity_type'
     ],
     props: ['title', 'deptOptions', 'deptMap'],
+    computed: {
+        ...mapGetters(['permissions', 'userInfo']),
+
+        // 判断用户是否属于纠纷调解部
+        isDisputeMediationDept() {
+            return this.deptIdList.includes(this.userInfo.deptId);
+        },
+
+        // 判断用户是否为调解员
+        isMediator() {
+            return this.userInfo.isDMCenterMediator === true || this.userInfo.isDMCourtMediator === true;
+        },
+        filteredDeptTypeOptions() {
+            if (!this.dict.type.dept_type?.options) {
+                return [];
+            }
+            const options = this.dict.type.dept_type.options;
+            const deptType = this.form.deptType;
+
+            if (DEPT_TYPE.insuranceList.includes(deptType)) {
+                // 查找保险机构
+                const insuranceNode = options.find(item => {
+                    return item.label === '保险机构' || item.dictLabel === '保险机构' || (Array.isArray(item.value) && item.value.some(v => String(v).startsWith('insurance')));
+                });
+
+                if (insuranceNode) {
+                    const result = [insuranceNode];
+                    return result;
+                }
+
+                return [];
+            }
+
+            return [];
+        }
+    },
     data() {
         return {
             visible: false,
@@ -1478,7 +1535,7 @@ export default {
                 //   { required: true, message: '受理状态为必填项', trigger: 'change' },
                 // ],
                 markCaseType: [{ required: true, message: '案件类型为必填项', trigger: 'change' }],
-                institutionType: [{ required: true, message: '自收案件机构类型为必填项', trigger: 'change' }],
+                institutionType: [{ required: true, message: '机构类型为必填项', trigger: 'change' }],
                 mediationNumber: [{ required: true, message: '调解次数为必填项', trigger: 'change' }]
             },
             disabled: false,
@@ -1830,6 +1887,9 @@ export default {
 3.2.3证据目的:
 3.2.4份数`;
             }
+            if (this.DEPT_TYPE.insuranceList.includes(this.form.deptType)) {
+                this.filteredDeptTypeOptions;
+            }
             // 工单进入审核状态或办结
             this.disabled =
                 (DM_STATUS.DM_STATUS4 === this.form.status && this.form.agreementStep != null && DM_AGREEMENT_STEP.AR !== this.form.agreementStep) ||
@@ -1862,6 +1922,9 @@ export default {
                     }
                     if (res.data != null && res.data.selfCollectionCaseType != null && res.data.selfCollectionCaseType !== '') {
                         this.$set(this.form, 'selfCollectionCaseType', String(res.data.selfCollectionCaseType));
+                    }
+                    if (res.data != null && res.data.controversyCause != null && res.data.controversyCause !== '') {
+                        this.$set(this.form, 'controversyCause', String(res.data.controversyCause));
                     }
                     if (res.data != null && res.data.identityType != null && res.data.identityType !== '') {
                         this.$set(this.form, 'identityType', String(res.data.identityType));
@@ -1933,6 +1996,7 @@ export default {
                     delete payload.cityCode;
                     delete payload.cityName;
                     delete payload.selfCollectionCaseType;
+                    delete payload.controversyCause;
                     delete payload.agreedReductionAmount;
                     delete payload.institutionType;
                     const {
@@ -1949,6 +2013,7 @@ export default {
                         cityName,
                         agreedReductionAmount,
                         selfCollectionCaseType,
+                        controversyCause,
                         remark,
                         institutionType
                     } = this.form;
@@ -1971,6 +2036,7 @@ export default {
                                     cityCode,
                                     cityName,
                                     selfCollectionCaseType,
+                                    controversyCause,
                                     agreedReductionAmount,
                                     remark
                                 });
@@ -2000,6 +2066,7 @@ export default {
                                     cityCode,
                                     cityName,
                                     selfCollectionCaseType,
+                                    controversyCause,
                                     agreedReductionAmount,
                                     remark
                                 });
@@ -2019,6 +2086,11 @@ export default {
             this.visible = false;
             this.reset();
         },
+        deptChangeClick() {
+            if (this.$refs && this.$refs.form) {
+                this.$refs.form.clearValidate('institutionType');
+            }
+        },
         /** 机构发生变化 */
         deptChange() {
             if (this.form.deptId) {
@@ -2037,8 +2109,17 @@ export default {
                 //   this.form.deptHandlerPhone = null;
                 //   this.form.deptHandlerCertNum = null;
                 // }
+                if (DEPT_TYPE.insuranceList.includes(this.form.deptType)) {
+                    // 强制重新计算
+                    this.$nextTick(() => {
+                        this.filteredDeptTypeOptions;
+                    });
+                }
             } else {
                 this.form.deptType = null;
+            }
+            if (this.$refs && this.$refs.form) {
+                this.$refs.form.clearValidate('institutionType');
             }
         },
 
