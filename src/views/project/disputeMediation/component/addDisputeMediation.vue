@@ -304,8 +304,8 @@
                                 </el-form-item>
                             </el-col>
                             <el-col :span="12" v-if="!$store.getters.userInfo.isDMEntryClerk">
-                                <el-form-item label="调解次数" prop="mediationNumber">
-                                    <el-input v-model="form.mediationNumber" show-word-limit placeholder="请输入调解次数" clearable default-value="否" />
+                                <el-form-item label="调解次数" prop="mediationNumber" :rules="[{ required: $store.getters.userInfo.isMediator, message: '调解次数为必填项', trigger: 'blur' }]">
+                                    <el-input v-model="form.mediationNumber" show-word-limit placeholder="请输入调解次数" clearable />
                                 </el-form-item>
                             </el-col>
                         </el-row>
@@ -318,8 +318,8 @@
                         </el-row>
                         <el-row>
                             <el-col :span="24">
-                                <el-form-item label="备注" prop="remark">
-                                    <el-input v-model="form.remark" type="textarea" placeholder="可填写多个当事人的信息" clearable maxlength="50" show-word-limit :autosize="{ minRows: 1 }" />
+                                <el-form-item label="其他当事人信息" prop="remark">
+                                    <el-input v-model="form.remark" type="textarea" placeholder="请输入其他当事人信息" clearable maxlength="50" show-word-limit :autosize="{ minRows: 1 }" />
                                 </el-form-item>
                             </el-col>
                         </el-row>
@@ -573,7 +573,18 @@
                                 </el-form-item>
                             </el-col>
                             <el-col :span="12">
-                                <el-form-item label="保险消费投诉事由分类" prop="insuranceComplaintType" label-width="165px">
+                                <el-form-item
+                                    label="保险消费投诉事由分类"
+                                    prop="insuranceComplaintType"
+                                    label-width="165px"
+                                    :rules="[
+                                        {
+                                            required: DEPT_TYPE.insuranceList.includes(form.deptType),
+                                            message: '保险消费投诉事由分类为必填项',
+                                            trigger: 'change'
+                                        }
+                                    ]"
+                                >
                                     <el-select v-model="form.insuranceComplaintType" placeholder="请选择保险消费投诉事由分类" clearable style="width: 100%">
                                         <el-option v-for="dict in dict.type.dm_insurance_complaint_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                                     </el-select>
@@ -1685,7 +1696,7 @@ export default {
                         trigger: 'blur'
                     }
                 ],
-                mediationNumber: [{ required: true, message: '调解次数为必填项', trigger: 'change' }],
+                // mediationNumber: [{ required: true, message: '调解次数为必填项', trigger: 'change' }],
                 identityType: [{ required: true, message: '消费者身份类型为必填项', trigger: 'change' }],
                 // age: [{ required: this.form.consumerIdentityType !== DM_IDENTITY_TYPE.LEGAL, message: '消费者年龄为必填项', trigger: 'blur' }],
                 isRepeatedly: [{ required: true, message: '是否屡投为必填项', trigger: 'change' }],
@@ -1708,7 +1719,7 @@ export default {
                 //   { required: this.$store.getters.userInfo.isDMInstitution && this.SYS_YES_NO.sys_no !== this.form.deptAcceptMediate, message: '经办人身份证号为必填项', trigger: 'blur' },
                 //   { validator: , trigger: 'blur' }
                 // ],
-                businessType1: [{ required: this.$store.getters.userInfo.isDMEntryClerk || this.$store.getters.userInfo.isDMMediator, message: '业务类别为必填项', trigger: 'change' }],
+                // businessType1: [{ required: this.$store.getters.userInfo.isDMEntryClerk || this.$store.getters.userInfo.isDMMediator, message: '业务类别为必填项', trigger: 'change' }],
                 // handleChannel: [
                 //   { required: this.$store.getters.userInfo.isDMInstitution && this.SYS_YES_NO.sys_no !== this.form.deptAcceptMediate, message: '业务办理渠道为必填项', trigger: 'change' }
                 // ],
@@ -2888,7 +2899,7 @@ export default {
                 consumerIdentityType: null,
                 identityType: null,
                 email: null,
-                mediationNumber: '否',
+                mediationNumber: null,
                 institutionType: null,
                 disputedProductType: null,
                 selfCollectionCaseType: null,

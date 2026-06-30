@@ -200,7 +200,7 @@
                     </el-row>
                     <el-row>
                         <el-col :span="24">
-                            <el-form-item label="备注" prop="remark">
+                            <el-form-item label="其他当事人信息" prop="remark">
                                 <el-input v-model="form.remark" type="textarea" readonly maxlength="50" :autosize="{ minRows: 1 }" />
                             </el-form-item>
                         </el-col>
@@ -568,13 +568,6 @@
                             <el-select v-model="form.enforceAgreementType" disabled style="width: 100%" placeholder="">
                                 <el-option v-for="dict in dict.type.dm_enforce_agreement_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                             </el-select>
-                        </el-form-item>
-                    </el-col>
-                </el-row>
-                <el-row>
-                    <el-col v-if="DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)" :span="12">
-                        <el-form-item label="协议减免金额（元）" prop="agreedReductionAmount" label-width="140px">
-                            <el-input v-model="form.agreedReductionAmount" placeholder="" maxlength="12" show-word-limit clearable readonly />
                         </el-form-item>
                     </el-col>
                 </el-row>
@@ -963,8 +956,6 @@ export default {
                     }
                     if (res.data != null && res.data.mediationNumber != null && res.data.mediationNumber !== '') {
                         this.$set(this.form, 'mediationNumber', String(res.data.mediationNumber));
-                    } else {
-                        this.$set(this.form, 'mediationNumber', '否');
                     }
                     if (res.data != null && res.data.remark != null && res.data.remark !== '') {
                         this.$set(this.form, 'remark', String(res.data.remark));
@@ -980,9 +971,6 @@ export default {
                     }
                     if (res.data != null && res.data.channelType != null && res.data.channelType !== '') {
                         this.$set(this.form, 'channelType', String(res.data.channelType));
-                    }
-                    if (res.data != null && res.data.agreedReductionAmount != null && res.data.agreedReductionAmount !== '') {
-                        this.$set(this.form, 'agreedReductionAmount', String(res.data.agreedReductionAmount));
                     }
                     if (res.data != null && res.data.selfCollectionCaseType != null && res.data.selfCollectionCaseType !== '') {
                         this.$set(this.form, 'selfCollectionCaseType', String(res.data.selfCollectionCaseType));

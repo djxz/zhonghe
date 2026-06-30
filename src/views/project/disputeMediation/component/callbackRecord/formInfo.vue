@@ -22,7 +22,7 @@
                     }"
                 ></el-date-picker>
             </el-form-item>
-            <el-form-item label="执行时间" prop="executionTime">
+            <!-- <el-form-item label="执行时间" prop="executionTime">
                 <el-date-picker
                     v-model="formInfo.executionTime"
                     type="datetime"
@@ -38,6 +38,12 @@
                         }
                     }"
                 ></el-date-picker>
+            </el-form-item> -->
+
+            <el-form-item label="回访类型" prop="executionCompletedFlag">
+                <el-select v-model="formInfo.executionCompletedFlag" :placeholder="isEdit ? '' : '请选择回访类型'" clearable style="width: 100%" :disabled="isEdit">
+                    <el-option v-for="dict in dict.type.sys_yes_no" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                </el-select>
             </el-form-item>
 
             <el-form-item label="是否执行完毕" prop="executionCompletedFlag">
@@ -139,6 +145,7 @@ export default {
 
                 if (!this.formInfo.returnVisitId) {
                     this.formInfo.time = new Date();
+                    this.formInfo.executionTime = new Date();
                 }
             },
             immediate: true,

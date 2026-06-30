@@ -6,7 +6,7 @@
                 <div class="min_title">工单信息</div>
                 <el-row>
                     <el-col :span="12">
-                        <el-form-item label="工单编号" prop="workOrderId">
+                        <el-form-item label="案件编号" prop="workOrderId">
                             <el-input v-model="form.workOrderId" disabled />
                         </el-form-item>
                     </el-col>

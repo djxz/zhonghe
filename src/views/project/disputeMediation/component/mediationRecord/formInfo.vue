@@ -103,13 +103,14 @@
                             style="width: 100%"
                             :disabled="DM_STATUS.DM_STATUS10 === this.row.status || isEdit"
                             clearable
+                            @change="handleChangeResult"
                         >
                             <el-option v-for="dict in dict.type.dm_mediation_result" :key="dict.value" :label="dict.label" :value="dict.value" />
                         </el-select>
                     </el-form-item>
                 </el-col>
                 <el-col :span="12">
-                    <el-form-item label="调解金额" prop="mediationAmount">
+                    <el-form-item label="调解金额" prop="mediationAmount" :rules="[{ required: !this.isEdit && true, message: '请输入调解金额', trigger: 'blur' }]">
                         <el-input
                             v-model="formInfo.mediationAmount"
                             :placeholder="DM_STATUS.DM_STATUS10 === this.row.status || isEdit ? '' : '请输入调解金额'"
@@ -139,6 +140,19 @@
                         </el-select>
                     </el-form-item>
                 </el-col>
+                <!-- <el-col :span="12">
+                    <el-form-item label="协议减免金额（元）" prop="agreedReductionAmount" label-width="150px">
+                        <el-input
+                            v-model="form.agreedReductionAmount"
+                            :placeholder="disabled ? '' : '请输入涉案金额'"
+                            maxlength="12"
+                            show-word-limit
+                            @input="validAmount(form.agreedReductionAmount, 'agreedReductionAmount')"
+                            clearable
+                            :disabled="disabled"
+                        />
+                    </el-form-item>
+                </el-col> -->
                 <el-col :span="24">
                     <el-form-item
                         label="调解失败原因"
@@ -168,6 +182,7 @@
                             style="width: 100%"
                             :disabled="DM_STATUS.DM_STATUS10 === this.row.status || isEdit"
                             clearable
+                            @change="handleChangeIsApplyJudicialCheck"
                         >
                             <el-option v-for="dict in dict.type.sys_yes_no" :key="dict.value" :label="dict.label" :value="dict.value" />
                         </el-select>
@@ -408,7 +423,7 @@
 </template>
 
 <script>
-import { DM_MEDIATION_RESULT, DM_STATUS, SYS_YES_NO } from '@/views/constant/CommonConstant.js';
+import { DM_MEDIATION_RESULT, DM_STATUS, SYS_YES_NO, DEPT_TYPE } from '@/views/constant/CommonConstant.js';
 
 export default {
     name: '',
@@ -432,6 +447,7 @@ export default {
             DM_STATUS: DM_STATUS, // 纠纷业务状态
             DM_MEDIATION_RESULT: DM_MEDIATION_RESULT, // 纠纷业务调解结果
             SYS_YES_NO: SYS_YES_NO, // 纠纷业务调解结果
+            DEPT_TYPE: DEPT_TYPE, // 机构类型
             dsr: null,
             formInfo: {
                 time: null,
@@ -447,6 +463,8 @@ export default {
                 needReturnVisit: null,
                 // 调解金额
                 mediationAmount: null,
+                // 协议减免金额（元）
+                agreedReductionAmount: null,
                 // 是否获得司法确认
                 isGetJudicialCheck: null,
                 // 是否申请司法确认
@@ -523,6 +541,29 @@ export default {
 
         setFormInfo(data) {
             this.formInfo = { ...this.formInfo, ...data };
+        },
+        handleChangeIsApplyJudicialCheck() {
+            if (this.formInfo.isApplyJudicialCheck === SYS_YES_NO.sys_no) {
+                this.formInfo.isGetJudicialCheck = SYS_YES_NO.sys_no;
+            } else {
+                this.formInfo.isApplyJudicialCheck = null;
+            }
+        },
+        handleChangeResult() {
+            if (this.formInfo.result === DM_MEDIATION_RESULT.fail) {
+                this.formInfo.isApplyJudicialCheck = SYS_YES_NO.sys_no;
+                this.formInfo.isGetJudicialCheck = SYS_YES_NO.sys_no;
+                this.formInfo.mediationAmount = 0;
+            } else if (this.formInfo.result === DM_MEDIATION_RESULT.success) {
+                this.formInfo.isApplyJudicialCheck = null;
+                this.formInfo.isGetJudicialCheck = null;
+                this.formInfo.needReturnVisit = SYS_YES_NO.sys_yes;
+            } else {
+                this.formInfo.isApplyJudicialCheck = null;
+                this.formInfo.isGetJudicialCheck = null;
+                this.formInfo.needReturnVisit = null;
+                this.formInfo.mediationAmount = null;
+            }
         },
 
         // 刷新时间

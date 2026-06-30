@@ -252,7 +252,7 @@
                         </el-form-item>
                     </el-col>
                     <el-col :span="12">
-                        <el-form-item label="调解次数" prop="mediationNumber">
+                        <el-form-item label="调解次数" prop="mediationNumber" :rules="disabled ? [] : [{ required: $store.getters.userInfo.isMediator, message: '调解次数为必填项', trigger: 'blur' }]">
                             <el-input v-model="form.mediationNumber" show-word-limit clearable :placeholder="disabled ? '' : '请输入调解次数'" :disabled="disabled" />
                         </el-form-item>
                     </el-col>
@@ -275,11 +275,11 @@
                 </el-row>
                 <el-row>
                     <el-col :span="24">
-                        <el-form-item label="备注" prop="remark">
+                        <el-form-item label="其他当事人信息" prop="remark">
                             <el-input
                                 v-model="form.remark"
                                 type="textarea"
-                                :placeholder="disabled ? '' : '可填写多个当事人的信息'"
+                                :placeholder="disabled ? '' : '请输入其他当事人信息'"
                                 clearable
                                 maxlength="50"
                                 show-word-limit
@@ -1002,19 +1002,6 @@
                         </el-select>
                     </el-form-item>
                 </el-col>
-                <el-col v-if="DEPT_TYPE.bankList.includes(form.deptType) || DEPT_TYPE.nonBankList.includes(form.deptType)" :span="12">
-                    <el-form-item label="协议减免金额（元）" prop="agreedReductionAmount" label-width="150px">
-                        <el-input
-                            v-model="form.agreedReductionAmount"
-                            :placeholder="disabled ? '' : '请输入涉案金额'"
-                            maxlength="12"
-                            show-word-limit
-                            @input="validAmount(form.agreedReductionAmount, 'agreedReductionAmount')"
-                            clearable
-                            :disabled="disabled"
-                        />
-                    </el-form-item>
-                </el-col>
             </el-row>
             <el-row>
                 <el-col :span="12">
@@ -1535,8 +1522,8 @@ export default {
                 //   { required: true, message: '受理状态为必填项', trigger: 'change' },
                 // ],
                 markCaseType: [{ required: true, message: '案件类型为必填项', trigger: 'change' }],
-                institutionType: [{ required: true, message: '机构类型为必填项', trigger: 'change' }],
-                mediationNumber: [{ required: true, message: '调解次数为必填项', trigger: 'change' }]
+                institutionType: [{ required: true, message: '机构类型为必填项', trigger: 'change' }]
+                // mediationNumber: [{ required: true, message: '调解次数为必填项', trigger: 'change' }]
             },
             disabled: false,
             // 常量
@@ -1779,7 +1766,7 @@ export default {
                 updateId: null,
                 updateTime: null,
                 markCaseType: '20',
-                agreedReductionAmount: null,
+                // agreedReductionAmount: null,
                 consumerIdentityType: null,
                 identityType: null,
                 email: null,
@@ -1910,16 +1897,14 @@ export default {
                     }
                     if (res.data != null && res.data.mediationNumber != null && res.data.mediationNumber !== '') {
                         this.$set(this.form, 'mediationNumber', String(res.data.mediationNumber));
-                    } else {
-                        this.$set(this.form, 'mediationNumber', '否');
                     }
                     if (res.data != null && res.data.remark != null && res.data.remark !== '') {
                         this.$set(this.form, 'remark', String(res.data.remark));
                     }
 
-                    if (res.data != null && res.data.agreedReductionAmount != null && res.data.agreedReductionAmount !== '') {
-                        this.$set(this.form, 'agreedReductionAmount', String(res.data.agreedReductionAmount));
-                    }
+                    // if (res.data != null && res.data.agreedReductionAmount != null && res.data.agreedReductionAmount !== '') {
+                    //     this.$set(this.form, 'agreedReductionAmount', String(res.data.agreedReductionAmount));
+                    // }
                     if (res.data != null && res.data.selfCollectionCaseType != null && res.data.selfCollectionCaseType !== '') {
                         this.$set(this.form, 'selfCollectionCaseType', String(res.data.selfCollectionCaseType));
                     }
@@ -1997,7 +1982,6 @@ export default {
                     delete payload.cityName;
                     delete payload.selfCollectionCaseType;
                     delete payload.controversyCause;
-                    delete payload.agreedReductionAmount;
                     delete payload.institutionType;
                     const {
                         email,
@@ -2011,7 +1995,6 @@ export default {
                         provinceName,
                         cityCode,
                         cityName,
-                        agreedReductionAmount,
                         selfCollectionCaseType,
                         controversyCause,
                         remark,
@@ -2037,7 +2020,6 @@ export default {
                                     cityName,
                                     selfCollectionCaseType,
                                     controversyCause,
-                                    agreedReductionAmount,
                                     remark
                                 });
                                 this.loading = false;
@@ -2067,7 +2049,6 @@ export default {
                                     cityName,
                                     selfCollectionCaseType,
                                     controversyCause,
-                                    agreedReductionAmount,
                                     remark
                                 });
                                 this.loading = false;

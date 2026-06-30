@@ -114,7 +114,7 @@ export default {
             rules: {
                 isFulfill: [{ required: true, message: '请选择是否履约', trigger: 'change' }],
                 performanceRegistrationReason: [{ required: true, message: '事项为必填', trigger: 'blur' }],
-                performanceRegistrationAmount: [{ required: true, message: '金额为必填', trigger: 'blur' }],
+                // performanceRegistrationAmount: [{ required: true, message: '金额为必填', trigger: 'blur' }],
                 performanceRegistrationTime: [{ required: true, message: '请选择回访日期', trigger: 'change' }]
             }
         };

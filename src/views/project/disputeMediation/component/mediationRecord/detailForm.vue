@@ -86,7 +86,8 @@ export default {
                 recorder: data.recorder || null,
                 record: data.record || null,
                 result: data.result || null,
-
+                // 协议减免金额（元）
+                // agreedReductionAmount: data.agreedReductionAmount || null,
                 mediationAmount: data.mediationAmount || null,
                 needReturnVisit: data.needReturnVisit || null,
                 isGetJudicialCheck: data.isGetJudicialCheck || null,
@@ -137,6 +138,7 @@ export default {
                     manageDeptId: this.row.manageDeptId,
                     otherAgreedMediationTerms,
                     caseLable,
+                    // agreedReductionAmount,
                     mediatorUserId: this.row.mediatorUserId
                 });
                 this.$modal.msgSuccess(res.msg);

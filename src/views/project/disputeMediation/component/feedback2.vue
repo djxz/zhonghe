@@ -28,7 +28,7 @@
                 <div class="min_title">工单信息</div>
                 <el-row>
                     <el-col :span="12">
-                        <el-form-item label="工单编号" prop="workOrderId">
+                        <el-form-item label="案件编号" prop="workOrderId">
                             <el-input v-model="form.workOrderId" disabled />
                         </el-form-item>
                     </el-col>
@@ -373,7 +373,7 @@
                 </el-col>
                 <el-col :span="12">
                     <el-form-item label="保险消费投诉事由分类" prop="insuranceComplaintType" label-width="165px">
-                        <el-select v-model="form.insuranceComplaintType" placeholder="" style="width: 100%" disabled>
+                        <el-select v-model="form.insuranceComplaintType" :placeholder="disabled ? '' : '请选择保险消费投诉事由分类'" style="width: 100%" :disabled="disabled">
                             <el-option v-for="dict in dict.type.dm_insurance_complaint_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                         </el-select>
                     </el-form-item>
@@ -1280,8 +1280,6 @@ export default {
                     }
                     if (res.data != null && res.data.mediationNumber != null && res.data.mediationNumber !== '') {
                         this.$set(this.form, 'mediationNumber', String(res.data.mediationNumber));
-                    } else {
-                        this.$set(this.form, 'mediationNumber', '否');
                     }
                     if (res.data != null && res.data.identityType != null && res.data.identityType !== '') {
                         this.$set(this.form, 'identityType', String(res.data.identityType));
