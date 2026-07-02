@@ -490,6 +490,8 @@
                 <template v-slot="{ row }">
                     <el-button size="mini" type="text" icon="el-icon-info" @click="handleDetail(row)">详情</el-button>
 
+                    <el-button size="mini" type="text" icon="el-icon-s-data" @click="handleEvidenceComparison(row)">证据比对</el-button>
+
                     <el-button
                         size="mini"
                         type="text"
@@ -996,6 +998,9 @@
         <!-- 终止办结 -->
         <Terminate ref="terminateRef" :title="terminateTitle" @callback="getList" />
 
+        <!-- 证据比对报告 -->
+        <EvidenceComparison ref="evidenceComparisonRef" @callback="getList" />
+
         <!-- 悬浮按钮 -->
         <template v-if="showFloatingButton">
             <div v-for="(item, index) in minimizeList" :key="index">
@@ -1078,6 +1083,7 @@ import Export from './component/export.vue';
 import ExportAll from './component/exportAll.vue';
 import AutoAssign from './component/autoAssign.vue';
 import Terminate from './component/terminate.vue';
+import EvidenceComparison from './component/evidenceComparison.vue';
 import FloatingButton from './component/floatingButton.vue';
 import ViewFile from '@/components/viewFile';
 import { DM_CREATE_TYPE } from '../../constant/CommonConstant';
@@ -1119,6 +1125,7 @@ export default {
         ExportAll,
         AutoAssign,
         Terminate,
+        EvidenceComparison,
         FloatingButton,
         ViewFile
     },
@@ -1791,6 +1798,10 @@ export default {
                     }
                 });
             }
+        },
+        // 证据比对
+        handleEvidenceComparison(row) {
+            this.$refs.evidenceComparisonRef.open(row);
         },
         // 前台处理
         handleReception(row) {

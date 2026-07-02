@@ -1,7 +1,7 @@
 <!-- 新增调解记录 -->
 <template>
     <div>
-        <el-dialog :visible.sync="dialogVisible" :close-on-click-modal="false" width="75%" :show-close="false" class="mediation-dialog">
+        <el-dialog :visible.sync="dialogVisible" :close-on-click-modal="false" width="92%" :show-close="false" class="mediation-dialog" :class="{ 'mediation-dialog--script-open': smartScriptVisible }">
             <!-- <template #title>
         <div>
           <span class="el-dialog__title">{{ title }}</span>
@@ -15,8 +15,10 @@
           </div>
         </div>
       </template> -->
-            <el-row class="mediation-wrapper">
-                <el-col class="dialog-left" :span="13">
+            <div class="mediation-wrapper">
+                <div class="mediation-main">
+                    <el-row class="mediation-main-body">
+                        <el-col class="dialog-left" :span="13">
                     <div class="dialog-title">
                         <span>{{ title }}</span>
                         <p>
@@ -110,8 +112,8 @@
                         <el-button type="primary" @click="submitForm" :loading="btnLoading">提 交</el-button>
                         <el-button @click="cancel">取 消</el-button>
                     </div>
-                </el-col>
-                <el-col class="dialog-right" :span="11">
+                        </el-col>
+                        <el-col class="dialog-right" :span="11">
                     <div class="right-t">
                         <div class="t-title">填写调解信息</div>
                         <el-form ref="form" :model="diaputeForm" label-width="120px" hide-required-asterisk>
@@ -168,31 +170,54 @@
                         <div class="confirm-btn">
                             <el-button @click="handelCoverForm">确认信息，自动覆盖</el-button>
                         </div>
-                    </div>
-                    <div class="right-b">
-                        <div v-for="(item, index) in sseList" :key="index" class="socket-item">
-                            <div class="socket-l" v-if="item.role === '调解员'">
-                                <div class="person-info">
-                                    <p class="name">调解员</p>
-                                    <img class="avatar" src="@/assets/images/form-avatar.png" alt="" />
-                                </div>
-                                <div class="person-message">
-                                    <span>{{ item.message }}</span>
-                                </div>
-                            </div>
-                            <div class="socket-r" v-if="item.role === '投诉人'">
-                                <div class="person-message">
-                                    <span>{{ item.message }}</span>
-                                </div>
-                                <div class="person-info">
-                                    <p class="name">客户</p>
-                                    <img class="avatar" src="@/assets/images/form-avatar.png" />
-                                </div>
-                            </div>
+                        <div v-if="!smartScriptSessionEnded" class="smart-script-trigger">
+                            <el-button
+                                size="small"
+                                :type="smartScriptVisible ? 'info' : 'primary'"
+                                icon="el-icon-chat-dot-round"
+                                @click="toggleSmartScript"
+                            >
+                                智能话术
+                            </el-button>
                         </div>
                     </div>
-                </el-col>
-            </el-row>
+                            <div class="right-b" ref="rightB">
+                                <div class="right-b-chat">
+                                    <div v-for="(item, index) in sseList" :key="index" class="socket-item">
+                                        <div class="socket-l" v-if="item.role === '调解员'">
+                                            <div class="person-info">
+                                                <p class="name">调解员</p>
+                                                <img class="avatar" src="@/assets/images/form-avatar.png" alt="" />
+                                            </div>
+                                            <div class="person-message">
+                                                <span>{{ item.message }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="socket-r" v-if="item.role === '投诉人'">
+                                            <div class="person-message">
+                                                <span>{{ item.message }}</span>
+                                            </div>
+                                            <div class="person-info">
+                                                <p class="name">客户</p>
+                                                <img class="avatar" src="@/assets/images/form-avatar.png" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </el-col>
+                    </el-row>
+                </div>
+                <div v-if="smartScriptVisible" class="dialog-script">
+                    <smart-script-panel
+                        :panel-data="smartScriptData"
+                        :loading="smartScriptLoading"
+                        :script-regenerating="smartScriptRegenerating"
+                        @regenerate="handleSmartScriptRegenerate"
+                        @close="closeSmartScriptPanel"
+                    />
+                </div>
+            </div>
         </el-dialog>
     </div>
 </template>
@@ -208,15 +233,18 @@ import {
     getMediationRecordExpandInfo,
     saveOrUpdateMediationRecordExpand
 } from '@/api/project/disputeMediation';
+import { analyzeTypicalChat } from '@/api/ocr';
 import { parseTime } from '@/utils/ruoyi';
 import recordForm from './formInfo.vue';
+import SmartScriptPanel from './smartScriptPanel.vue';
 import { DEPT_TYPE, SYS_YES_NO } from '@/views/constant/CommonConstant';
 import { v4 as uuidv4 } from 'uuid';
 export default {
     name: '',
     props: ['title'],
     components: {
-        recordForm
+        recordForm,
+        SmartScriptPanel
     },
     data() {
         return {
@@ -247,7 +275,13 @@ export default {
             callStartPromise: null,
             callTranscriptDetailSaved: false,
             pendingSseEnd: false,
-            phoneWasConnectedFlag: false
+            phoneWasConnectedFlag: false,
+            smartScriptVisible: false,
+            smartScriptLoading: false,
+            smartScriptRegenerating: false,
+            smartScriptTimer: null,
+            smartScriptSessionEnded: false,
+            smartScriptData: null
         };
     },
     created() {},
@@ -290,11 +324,18 @@ export default {
                     this.callTranscriptDetailSaved = false;
                     this.pendingSseEnd = false;
                     this.phoneWasConnectedFlag = false;
+                    this.smartScriptVisible = false;
+                    this.smartScriptSessionEnded = false;
+                    this.smartScriptData = null;
+                    this.stopSmartScriptPolling();
                 }
             }
             if (nVal) {
                 this.$nextTick(() => this.$refs.mediationRecordForm.refreshTime());
             }
+        },
+        smartScriptVisible() {
+            this.$nextTick(() => this.calculateRightBHeight());
         },
         '$store.state.settings.callInfo.data': {
             handler(data) {
@@ -407,14 +448,86 @@ export default {
             }
         },
         calculateRightBHeight() {
-            const dialogLeft = document.querySelector('.dialog-left');
-            const rightT = document.querySelector('.right-t');
-            const rightB = document.querySelector('.right-b');
+            const dialogLeft = document.querySelector('.mediation-wrapper .dialog-left');
+            const rightT = document.querySelector('.mediation-wrapper .right-t');
+            const rightB = this.$refs.rightB || document.querySelector('.mediation-wrapper .right-b');
             if (dialogLeft && rightT && rightB) {
                 const dialogLeftHeight = dialogLeft.clientHeight || dialogLeft.offsetHeight;
                 const rightTHeight = rightT.clientHeight || rightT.offsetHeight;
                 rightB.style.height = dialogLeftHeight - rightTHeight + 'px';
-                // console.log('计算高度:', dialogLeftHeight, rightTHeight, dialogLeftHeight - rightTHeight);
+            }
+        },
+        async toggleSmartScript() {
+            if (this.smartScriptSessionEnded) return;
+            if (!this.isCallAnswered()) {
+                this.$modal.msgWarning('当前暂无通话');
+                return;
+            }
+            this.smartScriptVisible = !this.smartScriptVisible;
+            if (this.smartScriptVisible) {
+                await this.fetchSmartScriptAnalysis();
+                this.startSmartScriptPolling();
+            } else {
+                this.stopSmartScriptPolling();
+            }
+        },
+        closeSmartScriptPanel() {
+            this.smartScriptVisible = false;
+            this.stopSmartScriptPolling();
+        },
+        startSmartScriptPolling() {
+            this.stopSmartScriptPolling();
+            if (!this.smartScriptVisible || !this.isCallAnswered() || this.smartScriptSessionEnded) return;
+            this.smartScriptTimer = setInterval(() => {
+                this.fetchSmartScriptAnalysis({ silent: true });
+            }, 10000);
+        },
+        stopSmartScriptPolling() {
+            if (this.smartScriptTimer) {
+                clearInterval(this.smartScriptTimer);
+                this.smartScriptTimer = null;
+            }
+        },
+        buildSmartScriptMessages() {
+            return this.sseList
+                .filter(d => d && String(d.message || '').trim())
+                .map(d => ({
+                    role: this.mapRoleToTranscriptRole(d.role),
+                    content: String(d.message || '').trim(),
+                    timestamp: this.formatTranscriptTimestamp(d.timestamp)
+                }));
+        },
+        async fetchSmartScriptAnalysis({ silent = false } = {}) {
+            const messages = this.buildSmartScriptMessages();
+            if (!messages.length) {
+                if (!silent) {
+                    this.$modal.msgWarning('当前暂无可分析的通话内容');
+                }
+                return;
+            }
+            this.smartScriptLoading = !silent;
+            this.smartScriptRegenerating = silent;
+            try {
+                const res = await analyzeTypicalChat({ messages });
+                const body = res && res.data ? res.data : res;
+                if (body && body.code === 200 && body.data) {
+                    this.smartScriptData = body.data;
+                    return;
+                }
+                throw new Error((body && (body.message || body.msg)) || '智能话术生成失败');
+            } catch (error) {
+                if (!silent) {
+                    this.$modal.msgError(error.message || '智能话术生成失败');
+                }
+            } finally {
+                this.smartScriptLoading = false;
+                this.smartScriptRegenerating = false;
+            }
+        },
+        async handleSmartScriptRegenerate() {
+            await this.fetchSmartScriptAnalysis();
+            if (this.smartScriptVisible && this.isCallAnswered() && !this.smartScriptSessionEnded) {
+                this.startSmartScriptPolling();
             }
         },
         completedCount() {
@@ -573,6 +686,9 @@ export default {
                 await this.callStartPromise;
             }
             this.callEndHandled = true;
+            this.smartScriptSessionEnded = true;
+            this.stopSmartScriptPolling();
+            this.smartScriptVisible = false;
             void Promise.all([this.saveCallTranscriptDetailOnCallEnd(), this.onCallEnd({ isHangUp: true })]);
         },
         /** 提交前若通话未正常结束，补调结束接口 */
@@ -587,6 +703,7 @@ export default {
         },
         async onCallStart() {
             if (!this.isCallAnswered()) return;
+            this.smartScriptSessionEnded = false;
             try {
                 const res = await saveCallQualityWorkOrder({
                     workOrderId: this.row.workOrderId,
@@ -721,7 +838,40 @@ export default {
     padding-top: 0;
 }
 
+.mediation-dialog ::v-deep .el-dialog {
+    max-width: 1680px;
+    transition: width 0.25s ease;
+}
+
 .mediation-wrapper {
+    display: flex;
+    align-items: stretch;
+    min-height: 480px;
+
+    .mediation-main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        transition: flex 0.25s ease;
+    }
+
+    .mediation-main-body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .dialog-script {
+        width: 360px;
+        flex-shrink: 0;
+        margin-left: 12px;
+        padding-left: 12px;
+        border-left: 1px solid #d9e2ef;
+        display: flex;
+        flex-direction: column;
+        animation: script-column-in 0.28s ease-out;
+    }
+
     .dialog-left {
         border-right: 1px solid #ccc;
         padding-right: 10px !important;
@@ -749,6 +899,8 @@ export default {
 
     .dialog-right {
         padding-left: 10px !important;
+        display: flex;
+        flex-direction: column;
 
         .right-t {
             .t-title {
@@ -766,9 +918,7 @@ export default {
             .confirm-btn {
                 display: flex;
                 justify-content: center;
-                border-bottom: 2px solid #ccc;
-                margin-bottom: 10px;
-                padding-bottom: 10px;
+                padding-bottom: 8px;
 
                 button {
                     background: #0958d9;
@@ -777,6 +927,20 @@ export default {
                     &:hover {
                         color: #fff;
                     }
+                }
+            }
+
+            .smart-script-trigger {
+                display: flex;
+                justify-content: flex-end;
+                padding: 0 4px 10px;
+                margin-bottom: 10px;
+                border-bottom: 2px solid #ccc;
+
+                .el-button {
+                    border-radius: 4px;
+                    font-weight: 500;
+                    letter-spacing: 0.02em;
                 }
             }
 
@@ -792,7 +956,15 @@ export default {
         }
 
         .right-b {
-            overflow-y: auto;
+            overflow: hidden;
+            flex: 1;
+            min-height: 120px;
+
+            .right-b-chat {
+                height: 100%;
+                overflow-y: auto;
+                padding-right: 4px;
+            }
 
             .socket-item {
                 margin-top: 10px;
@@ -875,6 +1047,17 @@ export default {
                 }
             }
         }
+    }
+}
+
+@keyframes script-column-in {
+    from {
+        opacity: 0;
+        transform: translateX(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
     }
 }
 </style>

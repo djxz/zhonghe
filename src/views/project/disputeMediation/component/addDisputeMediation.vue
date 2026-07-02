@@ -1,7 +1,9 @@
 <!-- 新增纠纷业务工单对话框 -->
 <template xmlns="http://www.w3.org/1999/html">
-    <el-dialog ref="disputeDialog" :visible.sync="visible" width="85%" append-to-body :close-on-click-modal="false" :show-close="false" class="dispute-dialog" :close-on-press-escape="false">
-        <el-row class="add-dispute" :gutter="3">
+    <el-dialog ref="disputeDialog" :visible.sync="visible" width="92%" append-to-body :close-on-click-modal="false" :show-close="false" class="dispute-dialog" :class="{ 'dispute-dialog--script-open': smartScriptVisible }" :close-on-press-escape="false">
+        <div class="dispute-wrapper">
+            <div class="dispute-main">
+                <el-row class="add-dispute" :gutter="3">
             <el-col ref="dialogLeft" class="dialog-left" :span="14">
                 <div class="dialog-title">
                     <span>添加纠纷业务工单</span>
@@ -1541,9 +1543,20 @@
                     <div class="confirm-btn">
                         <el-button @click="handelCoverForm">确认信息，自动覆盖</el-button>
                     </div>
+                    <div v-if="!smartScriptSessionEnded" class="smart-script-trigger">
+                        <el-button
+                            size="small"
+                            :type="smartScriptVisible ? 'info' : 'primary'"
+                            icon="el-icon-chat-dot-round"
+                            @click="toggleSmartScript"
+                        >
+                            智能话术
+                        </el-button>
+                    </div>
                 </div>
                 <div ref="rightB" class="right-b">
-                    <div v-for="(item, index) in sseList" :key="index" class="socket-item">
+                    <div class="right-b-chat">
+                        <div v-for="(item, index) in sseList" :key="index" class="socket-item">
                         <div class="socket-l" v-if="item.role === '调解员'">
                             <div class="person-info">
                                 <p class="name">调解员</p>
@@ -1564,8 +1577,20 @@
                         </div>
                     </div>
                 </div>
+                </div>
             </el-col>
-        </el-row>
+                </el-row>
+            </div>
+            <div v-if="smartScriptVisible" class="dialog-script">
+                <smart-script-panel
+                    :panel-data="smartScriptData"
+                    :loading="smartScriptLoading"
+                    :script-regenerating="smartScriptRegenerating"
+                    @regenerate="handleSmartScriptRegenerate"
+                    @close="closeSmartScriptPanel"
+                />
+            </div>
+        </div>
     </el-dialog>
 </template>
 
@@ -1590,6 +1615,8 @@ import { DEPT_TYPE, SYS_YES_NO, SYS_SEX, DM_ACCEPT_STATUS, DM_ENTRY_CHANNEL, CER
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import { getToken } from '@/utils/auth';
+import { analyzeTypicalChat } from '@/api/ocr';
+import SmartScriptPanel from './mediationRecord/smartScriptPanel.vue';
 
 /** 与左侧表单 el-input 的 maxlength 一致，OCR 映射时超长则截取 */
 const OCR_FIELD_MAXLENGTH = {
@@ -1631,7 +1658,7 @@ const OCR_FIELD_MAXLENGTH = {
 };
 
 export default {
-    components: { Treeselect },
+    components: { Treeselect, SmartScriptPanel },
     dicts: [
         'dept_type',
         'dm_status',
@@ -1804,6 +1831,12 @@ export default {
             callQualityRecordLinked: false,
             callStartPromise: null,
             callTranscriptDetailSaved: false,
+            smartScriptVisible: false,
+            smartScriptLoading: false,
+            smartScriptRegenerating: false,
+            smartScriptTimer: null,
+            smartScriptSessionEnded: false,
+            smartScriptData: null,
             filteredCertTypeOptions: [], // 动态证件类型选项
             // 消费者身份类型与证件类型的映射关系
             certTypeMapping: {
@@ -1900,7 +1933,14 @@ export default {
                 this.callQualityRecordLinked = false;
                 this.callStartPromise = null;
                 this.callTranscriptDetailSaved = false;
+                this.smartScriptVisible = false;
+                this.smartScriptSessionEnded = false;
+                this.smartScriptData = null;
+                this.stopSmartScriptPolling();
             }
+        },
+        smartScriptVisible() {
+            this.$nextTick(() => this.calculateRightBHeight());
         },
         '$store.state.settings.callInfo.data': {
             handler(data) {
@@ -3266,6 +3306,79 @@ export default {
             const height = Math.max(0, dialogLeftHeight - rightTHeight);
             rightB.style.height = height + 'px';
         },
+        async toggleSmartScript() {
+            if (this.smartScriptSessionEnded) return;
+            if (!this.isCallAnswered()) {
+                this.$modal.msgWarning('当前暂无通话');
+                return;
+            }
+            this.smartScriptVisible = !this.smartScriptVisible;
+            if (this.smartScriptVisible) {
+                await this.fetchSmartScriptAnalysis();
+                this.startSmartScriptPolling();
+            } else {
+                this.stopSmartScriptPolling();
+            }
+        },
+        closeSmartScriptPanel() {
+            this.smartScriptVisible = false;
+            this.stopSmartScriptPolling();
+        },
+        startSmartScriptPolling() {
+            this.stopSmartScriptPolling();
+            if (!this.smartScriptVisible || !this.isCallAnswered() || this.smartScriptSessionEnded) return;
+            this.smartScriptTimer = setInterval(() => {
+                this.fetchSmartScriptAnalysis({ silent: true });
+            }, 10000);
+        },
+        stopSmartScriptPolling() {
+            if (this.smartScriptTimer) {
+                clearInterval(this.smartScriptTimer);
+                this.smartScriptTimer = null;
+            }
+        },
+        buildSmartScriptMessages() {
+            return this.sseList
+                .filter(d => d && String(d.message || '').trim())
+                .map(d => ({
+                    role: this.mapRoleToTranscriptRole(d.role),
+                    content: String(d.message || '').trim(),
+                    timestamp: this.formatTranscriptTimestamp(d.timestamp)
+                }));
+        },
+        async fetchSmartScriptAnalysis({ silent = false } = {}) {
+            const messages = this.buildSmartScriptMessages();
+            if (!messages.length) {
+                if (!silent) {
+                    this.$modal.msgWarning('当前暂无可分析的通话内容');
+                }
+                return;
+            }
+            this.smartScriptLoading = !silent;
+            this.smartScriptRegenerating = silent;
+            try {
+                const res = await analyzeTypicalChat({ messages });
+                const body = res && res.data ? res.data : res;
+                if (body && body.code === 200 && body.data) {
+                    this.smartScriptData = body.data;
+                    return;
+                }
+                throw new Error((body && (body.message || body.msg)) || '智能话术生成失败');
+            } catch (error) {
+                if (!silent) {
+                    this.$modal.msgError(error.message || '智能话术生成失败');
+                }
+            } finally {
+                this.smartScriptLoading = false;
+                this.smartScriptRegenerating = false;
+            }
+        },
+        async handleSmartScriptRegenerate() {
+            await this.fetchSmartScriptAnalysis();
+            if (this.smartScriptVisible && this.isCallAnswered() && !this.smartScriptSessionEnded) {
+                this.startSmartScriptPolling();
+            }
+        },
         /** 语音解析轮询结束后清理，避免重复请求覆盖用户编辑 */
         stopAsrDataInterval() {
             if (this.getDataInterval) {
@@ -3415,6 +3528,7 @@ export default {
             this.hadCallAttemptFlag = true;
             this.callAnsweredFlag = true;
             this.callEndHandled = false;
+            this.smartScriptSessionEnded = false;
             if (!this.callStartPromise) {
                 this.callStartPromise = this.onCallStart().finally(() => {
                     this.callStartPromise = null;
@@ -3429,6 +3543,9 @@ export default {
                 await this.callStartPromise;
             }
             this.callEndHandled = true;
+            this.smartScriptSessionEnded = true;
+            this.stopSmartScriptPolling();
+            this.smartScriptVisible = false;
             await Promise.all([this.saveCallTranscriptDetailOnCallEnd(), this.onCallEnd({ isHangUp: true })]);
         },
         /** 提交前若通话未正常结束，补调结束接口 */
@@ -3686,6 +3803,47 @@ export default {
     padding-top: 0;
 }
 
+.dispute-dialog ::v-deep .el-dialog {
+    max-width: 1680px;
+    transition: width 0.25s ease;
+}
+
+.dispute-wrapper {
+    display: flex;
+    align-items: stretch;
+    min-height: 480px;
+
+    .dispute-main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        transition: flex 0.25s ease;
+    }
+
+    .dialog-script {
+        width: 360px;
+        flex-shrink: 0;
+        margin-left: 12px;
+        padding-left: 12px;
+        border-left: 1px solid #d9e2ef;
+        display: flex;
+        flex-direction: column;
+        animation: script-column-in 0.28s ease-out;
+    }
+}
+
+@keyframes script-column-in {
+    from {
+        opacity: 0;
+        transform: translateX(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
 .recognize-records-list {
     list-style: none;
     margin: 8px 0 0;
@@ -3856,6 +4014,8 @@ export default {
 
     .dialog-right {
         padding-left: 10px !important;
+        display: flex;
+        flex-direction: column;
 
         .right-t {
             .region-title {
@@ -3867,9 +4027,7 @@ export default {
             .confirm-btn {
                 display: flex;
                 justify-content: center;
-                border-bottom: 2px solid #ccc;
-                margin-bottom: 10px;
-                padding-bottom: 10px;
+                padding-bottom: 8px;
 
                 button {
                     background: #0958d9;
@@ -3878,6 +4036,20 @@ export default {
                     &:hover {
                         color: #fff;
                     }
+                }
+            }
+
+            .smart-script-trigger {
+                display: flex;
+                justify-content: flex-end;
+                padding: 0 4px 10px;
+                margin-bottom: 10px;
+                border-bottom: 2px solid #ccc;
+
+                .el-button {
+                    border-radius: 4px;
+                    font-weight: 500;
+                    letter-spacing: 0.02em;
                 }
             }
 
@@ -3897,7 +4069,15 @@ export default {
         }
 
         .right-b {
-            overflow-y: auto;
+            overflow: hidden;
+            flex: 1;
+            min-height: 120px;
+
+            .right-b-chat {
+                height: 100%;
+                overflow-y: auto;
+                padding-right: 4px;
+            }
 
             .socket-item {
                 margin-top: 10px;

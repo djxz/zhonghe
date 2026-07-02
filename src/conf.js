@@ -36,7 +36,7 @@ export default {
         expandBaseUrl: _envS('$expandBaseUrl', 'http://192.168.0.89:6582/tj-mediation-server-expand'),
 
         /** OCR 识别服务基址（如 /ocr/upload 等接口均在此服务下） */
-        ocrBaseUrl: _envS('$ocrBaseUrl', 'http://192.168.0.54:35000/api'),
+        ocrBaseUrl: _envS('$ocrBaseUrl', 'http://192.168.0.60:35000/api'),
 
         // baseUrl: _envS('$baseUrl', 'http://data.zhi-shan.cn/tj-mediation-server'),
         publicPath: _envS('$publicPath', 'tj-mediation-manage'),

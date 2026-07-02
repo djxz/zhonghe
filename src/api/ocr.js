@@ -40,3 +40,15 @@ export function ocrFormDataPost(path, formData, timeout = 120000) {
 export function uploadOcr(formData, timeout = 120000) {
     return ocrFormDataPost('/ocr/upload', formData, timeout);
 }
+
+/** 智能话术分析 */
+export function analyzeTypicalChat(data, timeout = 30000) {
+    assertOcrBaseUrl();
+    const url = ocrServiceUrl('/typical/analyzeChat');
+    const token = getToken();
+    const headers = token ? { Authorization: 'Bearer ' + token } : {};
+    return axios.post(url, data, {
+        headers,
+        timeout
+    });
+}
