@@ -123,6 +123,19 @@
                     </el-form-item>
                 </el-col>
                 <el-col :span="12">
+                    <el-form-item label="协议减免金额（元）" prop="agreedReductionAmount" label-width="150px">
+                        <el-input
+                            v-model="formInfo.agreedReductionAmount"
+                            :placeholder="DM_STATUS.DM_STATUS10 === this.row.status || isEdit ? '' : '请输入协议减免金额（元）'"
+                            maxlength="12"
+                            show-word-limit
+                            @input="validAmount(formInfo.agreedReductionAmount, 'agreedReductionAmount')"
+                            clearable
+                            :disabled="DM_STATUS.DM_STATUS10 === this.row.status || isEdit"
+                        />
+                    </el-form-item>
+                </el-col>
+                <el-col :span="12">
                     <el-form-item
                         label="是否回访"
                         prop="needReturnVisit"
@@ -140,19 +153,6 @@
                         </el-select>
                     </el-form-item>
                 </el-col>
-                <!-- <el-col :span="12">
-                    <el-form-item label="协议减免金额（元）" prop="agreedReductionAmount" label-width="150px">
-                        <el-input
-                            v-model="form.agreedReductionAmount"
-                            :placeholder="disabled ? '' : '请输入涉案金额'"
-                            maxlength="12"
-                            show-word-limit
-                            @input="validAmount(form.agreedReductionAmount, 'agreedReductionAmount')"
-                            clearable
-                            :disabled="disabled"
-                        />
-                    </el-form-item>
-                </el-col> -->
                 <el-col :span="24">
                     <el-form-item
                         label="调解失败原因"
@@ -539,6 +539,20 @@ export default {
             return this.formInfo;
         },
 
+        /** 校验数字并且小数点后两位 */
+        validAmount(value, str) {
+            // 使用正则表达式限制输入
+            this.formInfo[str] = value.replace(/[^\d.]/g, ''); // 只允许输入数字和小数点
+            if (this.formInfo[str].split('.').length > 2) {
+                // 限制只能有一个小数点
+                this.formInfo[str] = this.formInfo[str].split('.').slice(0, 2).join('.');
+            }
+            if (this.formInfo[str].split('.')[1] && this.formInfo[str].split('.')[1].length > 2) {
+                // 限制小数点后最多两位
+                this.formInfo[str] = this.formInfo[str].slice(0, this.formInfo[str].indexOf('.') + 3);
+            }
+        },
+
         setFormInfo(data) {
             this.formInfo = { ...this.formInfo, ...data };
         },
@@ -546,7 +560,7 @@ export default {
             if (this.formInfo.isApplyJudicialCheck === SYS_YES_NO.sys_no) {
                 this.formInfo.isGetJudicialCheck = SYS_YES_NO.sys_no;
             } else {
-                this.formInfo.isApplyJudicialCheck = null;
+                this.formInfo.isGetJudicialCheck = null;
             }
         },
         handleChangeResult() {

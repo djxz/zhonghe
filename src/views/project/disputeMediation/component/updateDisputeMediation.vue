@@ -1283,15 +1283,15 @@
                 <el-row>
                     <el-col :span="12">
                         <el-form-item label="受理状态" prop="acceptStatus">
-                            <el-select v-model="form.acceptStatus" placeholder="请选择受理状态" style="width: 100%" clearable @change="form.rejectReason = null" disabled>
+                            <el-select v-model="form.acceptStatus" placeholder="请选择受理状态" style="width: 100%" clearable @change="form.selfRejectReason = null" disabled>
                                 <el-option v-for="dict in dict.type.dm_accept_status" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                             </el-select>
                         </el-form-item>
                     </el-col>
                     <el-col :span="12" v-if="DM_ACCEPT_STATUS.reject === form.acceptStatus">
-                        <el-form-item label="不予受理原因" prop="rejectReason">
-                            <el-select v-model="form.rejectReason" placeholder="请选择不予受理原因" clearable style="width: 100%" disabled>
-                                <el-option v-for="dict in dict.type.dm_reject_reason" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                        <el-form-item label="不予受理原因" prop="selfRejectReason">
+                            <el-select v-model="form.selfRejectReason" placeholder="请选择不予受理原因" clearable style="width: 100%" disabled>
+                                <el-option v-for="dict in dict.type.dm_self_reject_reason" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                             </el-select>
                         </el-form-item>
                     </el-col>
@@ -1332,6 +1332,7 @@ export default {
         'dm_bank_complaint_type',
         'dm_insurance_complaint_type',
         'dm_accept_status',
+        'dm_self_accept_status',
         'dm_reject_reason',
         'dm_business_type',
         'cert_type',
@@ -1738,7 +1739,8 @@ export default {
                 appealAmount: null,
                 deptAcceptMediate: null,
                 acceptStatus: null,
-                rejectReason: null,
+                // rejectReason: null,
+                selfRejectReason: null,
                 deptHandlerName: null,
                 deptHandlerPhone: null,
                 deptHandlerCertNum: null,
@@ -1766,7 +1768,6 @@ export default {
                 updateId: null,
                 updateTime: null,
                 markCaseType: '20',
-                // agreedReductionAmount: null,
                 consumerIdentityType: null,
                 identityType: null,
                 email: null,
@@ -1901,10 +1902,6 @@ export default {
                     if (res.data != null && res.data.remark != null && res.data.remark !== '') {
                         this.$set(this.form, 'remark', String(res.data.remark));
                     }
-
-                    // if (res.data != null && res.data.agreedReductionAmount != null && res.data.agreedReductionAmount !== '') {
-                    //     this.$set(this.form, 'agreedReductionAmount', String(res.data.agreedReductionAmount));
-                    // }
                     if (res.data != null && res.data.selfCollectionCaseType != null && res.data.selfCollectionCaseType !== '') {
                         this.$set(this.form, 'selfCollectionCaseType', String(res.data.selfCollectionCaseType));
                     }
@@ -1922,6 +1919,12 @@ export default {
                     }
                     if (res.data != null && res.data.channelType != null && res.data.channelType !== '') {
                         this.$set(this.form, 'channelType', String(res.data.channelType));
+                    } else {
+                        if (this.form.entryChannel && (this.form.entryChannel === DM_ENTRY_CHANNEL.C || this.form.entryChannel === DM_ENTRY_CHANNEL.G)) {
+                            this.form.channelType = '0';
+                        } else {
+                            this.form.channelType = '1';
+                        }
                     }
                     if (res.data != null && res.data.provinceCode != null && res.data.provinceCode) {
                         // 1. 动态构建级联选择器的回显数组

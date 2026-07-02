@@ -73,6 +73,7 @@ export default {
     methods: {
         open(row, data) {
             this.row = row;
+            console.log('🚀 ~ data.isGetJudicialCheck || null ~ :', data.isGetJudicialCheck || null);
             this.formData = {
                 mediationRecordId: data.mediationRecordId || null,
                 workOrderId: data.workOrderId || null,
@@ -86,9 +87,8 @@ export default {
                 recorder: data.recorder || null,
                 record: data.record || null,
                 result: data.result || null,
-                // 协议减免金额（元）
-                // agreedReductionAmount: data.agreedReductionAmount || null,
-                mediationAmount: data.mediationAmount || null,
+
+                mediationAmount: data.mediationAmount !== undefined && data.mediationAmount !== null ? data.mediationAmount : null,
                 needReturnVisit: data.needReturnVisit || null,
                 isGetJudicialCheck: data.isGetJudicialCheck || null,
                 isApplyJudicialCheck: data.isApplyJudicialCheck || null,
@@ -98,7 +98,10 @@ export default {
                 institutionIdentificationPhoto: data.institutionIdentificationPhoto || null,
                 scenePhoto: data.scenePhoto || null,
                 attachment: data.attachment || null,
+                // 案件标签
                 caseLable: data.caseLable || null,
+                // 协议减免金额（元）
+                agreedReductionAmount: data.agreedReductionAmount || null,
                 otherAgreedMediationTerms: data.otherAgreedMediationTerms || null
             };
             this.$refs.soundRecordingRef.open(row, data.callLogList, RECORD_RELATION_TYPE.mediationRecordSound, data.mediationRecordId, data.time);
@@ -130,7 +133,7 @@ export default {
 
                 this.btnLoading = true;
                 const childrenFormData = this.$refs.mediationRecordForm.getFormData();
-                const { caseLable, otherAgreedMediationTerms, ...restChildrenFormData } = childrenFormData;
+                const { caseLable, otherAgreedMediationTerms, agreedReductionAmount, ...restChildrenFormData } = childrenFormData;
                 const res = await updateMediationRecord(restChildrenFormData);
                 await saveOrUpdateMediationRecordExpand({
                     mediationRecordId: restChildrenFormData.mediationRecordId,
@@ -138,7 +141,7 @@ export default {
                     manageDeptId: this.row.manageDeptId,
                     otherAgreedMediationTerms,
                     caseLable,
-                    // agreedReductionAmount,
+                    agreedReductionAmount,
                     mediatorUserId: this.row.mediatorUserId
                 });
                 this.$modal.msgSuccess(res.msg);

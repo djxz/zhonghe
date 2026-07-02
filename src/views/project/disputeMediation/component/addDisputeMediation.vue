@@ -1245,15 +1245,22 @@
                         <el-row>
                             <el-col :span="12">
                                 <el-form-item label="受理状态" prop="acceptStatus">
-                                    <el-select v-model="form.acceptStatus" placeholder="请选择受理状态" style="width: 100%" clearable @change="form.rejectReason = null">
+                                    <el-select v-model="form.acceptStatus" placeholder="请选择受理状态" style="width: 100%" clearable @change="form.selfRejectReason = null">
                                         <el-option v-for="dict in dict.type.dm_accept_status" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                                     </el-select>
                                 </el-form-item>
                             </el-col>
-                            <el-col :span="12" v-if="DM_ACCEPT_STATUS.reject === form.acceptStatus">
+                            <!-- <el-col :span="12" v-if="DM_ACCEPT_STATUS.reject === form.acceptStatus">
                                 <el-form-item label="不予受理原因" prop="rejectReason">
                                     <el-select v-model="form.rejectReason" placeholder="请选择不予受理原因" clearable style="width: 100%">
                                         <el-option v-for="dict in dict.type.dm_reject_reason" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </el-col> -->
+                            <el-col :span="12" v-if="DM_ACCEPT_STATUS.reject === form.acceptStatus">
+                                <el-form-item label="不予受理原因" prop="selfRejectReason">
+                                    <el-select v-model="form.selfRejectReason" placeholder="请选择不予受理原因" clearable style="width: 100%">
+                                        <el-option v-for="dict in dict.type.dm_self_reject_reason" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                                     </el-select>
                                 </el-form-item>
                             </el-col>
@@ -1512,15 +1519,15 @@
                             <el-row class="line-row">
                                 <el-col :span="12">
                                     <el-form-item label="受理状态" prop="acceptStatus">
-                                        <el-select v-model="diaputeForm.acceptStatus" placeholder="请选择受理状态" style="width: 100%" clearable @change="diaputeForm.rejectReason = null">
+                                        <el-select v-model="diaputeForm.acceptStatus" placeholder="请选择受理状态" style="width: 100%" clearable @change="diaputeForm.selfRejectReason = null">
                                             <el-option v-for="dict in dict.type.dm_accept_status" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                                         </el-select>
                                     </el-form-item>
                                 </el-col>
                                 <el-col :span="12" v-if="DM_ACCEPT_STATUS.reject === diaputeForm.acceptStatus">
-                                    <el-form-item label="不予受理原因" prop="rejectReason">
-                                        <el-select v-model="diaputeForm.rejectReason" placeholder="请选择不予受理原因" clearable style="width: 100%">
-                                            <el-option v-for="dict in dict.type.dm_reject_reason" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                                    <el-form-item label="不予受理原因" prop="selfRejectReason">
+                                        <el-select v-model="diaputeForm.selfRejectReason" placeholder="请选择不予受理原因" clearable style="width: 100%">
+                                            <el-option v-for="dict in dict.type.dm_self_reject_reason" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                                         </el-select>
                                     </el-form-item>
                                 </el-col>
@@ -1666,7 +1673,8 @@ export default {
         'dm_bank_complaint_type',
         'dm_insurance_complaint_type',
         'dm_accept_status',
-        'dm_reject_reason',
+        // 'dm_reject_reason',
+        'dm_self_reject_reason',
         'dm_business_type',
         'cert_type',
         'sys_yes_no',
@@ -2485,7 +2493,8 @@ export default {
                 needCheck: SYS_YES_NO.sys_yes,
                 acceptStatus: DM_ACCEPT_STATUS.accept,
                 isSelf: SYS_YES_NO.sys_yes,
-                rejectReason: null
+                // rejectReason: null
+                selfRejectReason: null
             };
         },
         formatRecordTime() {
@@ -2649,7 +2658,8 @@ export default {
                 needCheck: 'sys_yes_no',
                 enforceAgreementType: 'dm_enforce_agreement_type',
                 acceptStatus: 'dm_accept_status',
-                rejectReason: 'dm_reject_reason',
+                // rejectReason: 'dm_reject_reason',
+                selfRejectReason: 'dm_self_reject_reason',
                 deptContactSex: 'sys_user_sex',
                 deptContactCertType: 'cert_type'
             };
@@ -2908,7 +2918,8 @@ export default {
                 deptAcceptMediate: this.$store.getters.userInfo.isDMInstitution ? this.SYS_YES_NO.sys_yes : null,
                 consumerAcceptMediate: null,
                 acceptStatus: null,
-                rejectReason: null,
+                // rejectReason: null,
+                selfRejectReason: null,
                 deptHandlerName: null,
                 deptHandlerPhone: null,
                 deptHandlerCertNum: null,
@@ -3134,6 +3145,7 @@ export default {
                     selfCollectionCaseType,
                     mediationNumber,
                     institutionType,
+                    selfRejectReason,
                     ...restForm
                 } = this.form;
 
@@ -3154,7 +3166,8 @@ export default {
                         cityName,
                         remark,
                         institutionType,
-                        mediationNumber
+                        mediationNumber,
+                        selfRejectReason
                     });
                     if (this.shouldRunCallQualityLogic()) {
                         await this.updateCallQualityWorkOrderForAddMediation({
