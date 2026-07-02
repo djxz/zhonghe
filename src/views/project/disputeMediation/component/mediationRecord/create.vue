@@ -372,7 +372,7 @@ export default {
                 childrenFormData.time = parseTime(childrenFormData.time, '{y}-{m}-{d} {h}:{i}:{s}');
                 childrenFormData.workOrderId = this.formData.workOrderId;
 
-                const { caseLable, otherAgreedMediationTerms, ...restChildrenFormData } = childrenFormData;
+                const { caseLable, otherAgreedMediationTerms, agreedReductionAmount, ...restChildrenFormData } = childrenFormData;
 
                 const res = await addMediationRecord(restChildrenFormData);
                 if (res.code === 200) {
@@ -384,6 +384,7 @@ export default {
                         manageDeptId: this.row.manageDeptId,
                         otherAgreedMediationTerms,
                         caseLable,
+                        agreedReductionAmount,
                         mediatorUserId: this.row.mediatorUserId
                     });
                     if (this.shouldRunCallQualityLogic()) {

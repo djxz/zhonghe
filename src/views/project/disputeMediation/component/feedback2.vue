@@ -379,7 +379,6 @@
                     </el-form-item>
                 </el-col>
             </el-row>
-
             <el-row>
                 <el-col :span="12">
                     <el-form-item
@@ -400,10 +399,6 @@
                             :props="{
                                 lazy: true,
                                 lazyLoad: (node, resolve) => {
-                                    if (!node) {
-                                        resolve([]);
-                                        return;
-                                    }
                                     if (node.level === 0) {
                                         this.loadProvinces(node, resolve);
                                     } else {
@@ -1031,7 +1026,6 @@ export default {
             provinceName: null,
             cityCode: null,
             cityName: null,
-            financialServiceArea: null,
             controversyCaseTypes: [
                 'bank_3', // 贷款-房屋抵押贷款（商业/公积金）
                 'bank_4', // 贷款-汽车抵押贷款
@@ -1072,6 +1066,31 @@ export default {
         //     this.$refs.insuranceType1Ref.toggleDropDownVisible(false);
         //   }
         // },
+    },
+    computed: {
+        filteredDeptTypeOptions() {
+            if (!this.dict.type.dept_type?.options) {
+                return [];
+            }
+            const options = this.dict.type.dept_type.options;
+            const deptType = this.form.deptType;
+
+            if (DEPT_TYPE.insuranceList.includes(deptType)) {
+                // 查找保险机构
+                const insuranceNode = options.find(item => {
+                    return item.label === '保险机构' || item.dictLabel === '保险机构' || (Array.isArray(item.value) && item.value.some(v => String(v).startsWith('insurance')));
+                });
+
+                if (insuranceNode) {
+                    const result = [insuranceNode];
+                    return result;
+                }
+
+                return [];
+            }
+
+            return [];
+        }
     },
     created() {},
     methods: {
@@ -1191,7 +1210,7 @@ export default {
                 children: node.children
             };
         },
-        open(row) {
+        async open(row) {
             this.reset();
             this.row = row;
             this.form = { ...row };
@@ -1272,9 +1291,8 @@ export default {
             temporaryLoadFeedback({ workOrderId: this.row.workOrderId }).then(temporary => {
                 this.hasTemporary = !!temporary.data;
             });
-
             getDisputeMediationExpandInfo(row.workOrderId)
-                .then(res => {
+                .then(async res => {
                     if (res.data != null && res.data.email != null && res.data.email !== '') {
                         this.$set(this.form, 'email', String(res.data.email));
                     }
@@ -1311,8 +1329,45 @@ export default {
                         if (res.data.cityCode) {
                             areaValue.push(res.data.cityCode);
                         }
+                        // try {
+                        //     // 重新加载省份数据
+                        //     const provinceRes = await getProvinces();
+                        //     if (provinceRes.code === 200) {
+                        //         this.areaOptions = provinceRes.data.map(item => ({
+                        //             value: item.provinceCode,
+                        //             label: item.provinceName,
+                        //             provinceCode: item.provinceCode,
+                        //             provinceName: item.provinceName,
+                        //             leaf: false
+                        //         }));
 
-                        // 给级联选择器赋值
+                        //         // 如果有城市，还要加载城市数据
+                        //         if (res.data.cityCode) {
+                        //             const cityRes = await getCities(res.data.provinceCode);
+                        //             // 找到对应的省份节点，添加城市数据
+                        //             this.areaOptions = this.areaOptions.map(province => {
+                        //                 if (province.value === res.data.provinceCode) {
+                        //                     return {
+                        //                         ...province,
+                        //                         children: cityRes.data.map(city => ({
+                        //                             value: city.cityCode,
+                        //                             label: city.cityName,
+                        //                             provinceCode: city.provinceCode,
+                        //                             cityCode: city.cityCode,
+                        //                             cityName: city.cityName,
+                        //                             leaf: true
+                        //                         }))
+                        //                     };
+                        //                 }
+                        //                 return province;
+                        //             });
+                        //         }
+                        //     }
+                        // } catch (error) {
+                        //     console.error('加载地区数据失败:', error);
+                        // }
+
+                        // 数据加载完成后再赋值
                         this.form.financialServiceArea = areaValue;
 
                         // 2. 给隐藏字段赋值
@@ -1457,32 +1512,38 @@ export default {
             // 2. 如果清空了选择，重置数据并返回
             if (!checkedNodes.length) {
                 this.resetAreaData();
+                this.form.financialServiceArea = [];
                 return;
             }
 
-            // 3. 获取最后选中的节点（即用户实际点击的那一级）
+            // 3. 获取最后选中的节点
             const selectedNode = checkedNodes[0];
 
-            // 4. 先重置所有区域数据，防止从“选到市”退回到“只选省”时，城市数据残留
+            // 4. 先重置所有区域数据
             this.resetAreaData();
 
             // 5. 根据 level 判断选择到了哪一级，并赋值
             if (selectedNode.level === 1) {
-                // 用户只选择了省份
                 this.form.provinceCode = selectedNode.data.provinceCode;
                 this.form.provinceName = selectedNode.data.provinceName;
+                this.form.financialServiceArea = [selectedNode.data.provinceCode];
             } else if (selectedNode.level === 2) {
-                // 用户选择了城市，此时可以通过 parent 获取省份信息
                 const provinceNode = selectedNode.parent;
-
                 if (provinceNode) {
                     this.form.provinceCode = provinceNode.data.provinceCode;
                     this.form.provinceName = provinceNode.data.provinceName;
                 }
-
                 this.form.cityCode = selectedNode.data.cityCode;
                 this.form.cityName = selectedNode.data.cityName;
+                this.form.financialServiceArea = [this.form.provinceCode, selectedNode.data.cityCode];
             }
+
+            // 🔥 关键：下次 tick 清除校验错误
+            this.$nextTick(() => {
+                if (this.$refs.form) {
+                    this.$refs.form.clearValidate('financialServiceArea');
+                }
+            });
         },
         // 4. 重置选择器数据（比如在 open 或 reset 方法里调用）
         resetAreaData() {

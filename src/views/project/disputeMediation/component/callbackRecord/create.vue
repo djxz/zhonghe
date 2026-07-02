@@ -31,6 +31,7 @@ export default {
             btnLoading: false,
             formData: {
                 workOrderId: null,
+                mediationRecordId: null,
                 content: null
             }
         };
@@ -41,6 +42,7 @@ export default {
         async open(row) {
             this.row = row;
             this.formData.workOrderId = row.workOrderId;
+            this.formData.mediationRecordId = row.mediationRecordId;
             this.dialogVisible = true;
             const res = await getFulfillmentExpandListByWorkOrderId(row.workOrderId);
             if (res.code === 200 && res.data != null) {
@@ -55,6 +57,7 @@ export default {
         reset() {
             this.$refs.callBackRecordForm.resetForm();
             this.formData.workOrderId = null;
+            this.formData.mediationRecordId = null;
         },
 
         // 提交
@@ -69,7 +72,7 @@ export default {
                 this.btnLoading = true;
                 const childrenFormData = this.$refs.callBackRecordForm.getFormData();
                 childrenFormData.time = parseTime(childrenFormData.time, '{y}-{m}-{d} {h}:{i}:{s}');
-                const { executionCompletedFlag, financialCauseFailureFlag, executionTime, ...restChildrenFormData } = childrenFormData;
+                const { executionCompletedFlag, financialCauseFailureFlag, returnVisitType, returnVisitId, ...restChildrenFormData } = childrenFormData;
 
                 const res = await addReturnVisit(restChildrenFormData);
                 if (res.code === 200) {
@@ -79,7 +82,7 @@ export default {
                         manageDeptId: this.row.manageDeptId,
                         executionCompletedFlag,
                         financialCauseFailureFlag,
-                        executionTime,
+                        returnVisitType,
                         mediatorUserId: this.row.mediatorUserId
                     });
                 }

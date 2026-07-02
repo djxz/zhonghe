@@ -22,27 +22,10 @@
                     }"
                 ></el-date-picker>
             </el-form-item>
-            <!-- <el-form-item label="执行时间" prop="executionTime">
-                <el-date-picker
-                    v-model="formInfo.executionTime"
-                    type="datetime"
-                    value-format="yyyy-MM-dd HH:mm:ss"
-                    :placeholder="isEdit ? '' : '请选择执行时间'"
-                    :disabled="isEdit"
-                    style="width: 100%"
-                    clearable
-                    :picker-options="{
-                        disabledDate(time) {
-                            // 禁用所有大于当前日期的日期
-                            return time.getTime() < Date.now() - 8.64e7;
-                        }
-                    }"
-                ></el-date-picker>
-            </el-form-item> -->
 
-            <el-form-item label="回访类型" prop="executionCompletedFlag">
-                <el-select v-model="formInfo.executionCompletedFlag" :placeholder="isEdit ? '' : '请选择回访类型'" clearable style="width: 100%" :disabled="isEdit">
-                    <el-option v-for="dict in dict.type.sys_yes_no" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+            <el-form-item label="回访类型" prop="returnVisitType">
+                <el-select v-model="formInfo.returnVisitType" :placeholder="isEdit ? '' : '请选择回访类型'" clearable style="width: 100%" :disabled="isEdit">
+                    <el-option v-for="dict in dict.type.dm_return_visit_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                 </el-select>
             </el-form-item>
 
@@ -102,7 +85,7 @@ export default {
             default: () => {}
         }
     },
-    dicts: ['sys_yes_no'],
+    dicts: ['sys_yes_no', 'dm_return_visit_type'],
     data() {
         return {
             dsr: null,
@@ -113,15 +96,15 @@ export default {
                 content: null,
                 executionCompletedFlag: null,
                 financialCauseFailureFlag: null,
-                executionTime: null
+                returnVisitType: null
             },
             SYS_YES_NO: SYS_YES_NO, // 是否
 
             rules: {
                 time: [{ required: true, message: '请选择回访日期', trigger: 'change' }],
-                executionTime: [{ required: true, message: '请选择执行时间', trigger: 'change' }],
                 cause: [{ required: true, message: '回访事由为必填', trigger: 'blur' }],
                 executionCompletedFlag: [{ required: true, message: '是否执行完毕为必填', trigger: 'change' }],
+                returnVisitType: [{ required: true, message: '回访类型为必填', trigger: 'change' }],
                 // financialCauseFailureFlag: [{ required: true, message: '是否因非金融机构原因导致调解协议未能执行为必填', trigger: 'change' }],
                 content: [{ required: true, message: '回访情况不能为空', trigger: 'blur' }]
             }
@@ -145,7 +128,6 @@ export default {
 
                 if (!this.formInfo.returnVisitId) {
                     this.formInfo.time = new Date();
-                    this.formInfo.executionTime = new Date();
                 }
             },
             immediate: true,
