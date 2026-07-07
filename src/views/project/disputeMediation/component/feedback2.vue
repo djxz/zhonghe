@@ -372,7 +372,18 @@
                     </el-form-item>
                 </el-col>
                 <el-col :span="12">
-                    <el-form-item label="保险消费投诉事由分类" prop="insuranceComplaintType" label-width="165px">
+                    <el-form-item
+                        :rules="[
+                            {
+                                required: true,
+                                message: '保险消费投诉事由分类为必填项',
+                                trigger: 'change'
+                            }
+                        ]"
+                        label="保险消费投诉事由分类"
+                        prop="insuranceComplaintType"
+                        label-width="165px"
+                    >
                         <el-select v-model="form.insuranceComplaintType" :placeholder="disabled ? '' : '请选择保险消费投诉事由分类'" style="width: 100%" :disabled="disabled">
                             <el-option v-for="dict in dict.type.dm_insurance_complaint_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                         </el-select>

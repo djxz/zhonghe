@@ -529,17 +529,10 @@
                         </el-select>
                     </el-form-item>
                 </el-col>
-                <!-- <el-col :span="12" v-if="DM_ACCEPT_STATUS.reject === form.acceptStatus">
+                <el-col :span="12" v-if="DM_ACCEPT_STATUS.reject === form.acceptStatus">
                     <el-form-item label="不予受理原因" prop="rejectReason">
                         <el-select v-model="form.rejectReason" placeholder="请选择不予受理原因" style="width: 100%" clearable>
                             <el-option v-for="dict in dict.type.dm_reject_reason" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
-                        </el-select>
-                    </el-form-item>
-                </el-col> -->
-                <el-col :span="12" v-if="DM_ACCEPT_STATUS.reject === form.acceptStatus">
-                    <el-form-item label="不予受理原因" prop="selfRejectReason">
-                        <el-select v-model="form.selfRejectReason" placeholder="请选择不予受理原因" style="width: 100%" clearable>
-                            <el-option v-for="dict in dict.type.dm_self_reject_reason" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                         </el-select>
                     </el-form-item>
                 </el-col>

@@ -692,22 +692,15 @@
                     <el-row>
                         <el-col :span="12">
                             <el-form-item label="受理状态" prop="acceptStatus">
-                                <el-select v-model="form.acceptStatus" style="width: 100%" disabled placeholder="" @change="form.selfRejectReason = null">
+                                <el-select v-model="form.acceptStatus" style="width: 100%" disabled placeholder="" @change="form.rejectReason = null">
                                     <el-option v-for="dict in dict.type.dm_accept_status" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                                 </el-select>
                             </el-form-item>
                         </el-col>
-                        <!-- <el-col :span="12" v-if="DM_ACCEPT_STATUS.reject === form.acceptStatus">
+                        <el-col :span="12" v-if="DM_ACCEPT_STATUS.reject === form.acceptStatus">
                             <el-form-item label="不予受理原因" prop="rejectReason">
                                 <el-select v-model="form.rejectReason" disabled style="width: 100%" placeholder="">
                                     <el-option v-for="dict in dict.type.dm_reject_reason" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
-                                </el-select>
-                            </el-form-item>
-                        </el-col> -->
-                        <el-col :span="12" v-if="DM_ACCEPT_STATUS.reject === form.acceptStatus">
-                            <el-form-item label="不予受理原因" prop="selfRejectReason">
-                                <el-select v-model="form.selfRejectReason" disabled style="width: 100%" placeholder="">
-                                    <el-option v-for="dict in dict.type.dm_self_reject_reason" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                                 </el-select>
                             </el-form-item>
                         </el-col>
@@ -964,9 +957,7 @@ export default {
                     if (res.data != null && res.data.email != null && res.data.email !== '') {
                         this.$set(this.form, 'email', String(res.data.email));
                     }
-                    if (res.data != null && res.data.selfRejectReason != null && res.data.selfRejectReason !== '') {
-                        this.$set(this.form, 'selfRejectReason', String(res.data.selfRejectReason));
-                    }
+
                     if (res.data != null && res.data.institutionType != null && res.data.institutionType !== '') {
                         this.$set(this.form, 'institutionType', String(res.data.institutionType));
                     }

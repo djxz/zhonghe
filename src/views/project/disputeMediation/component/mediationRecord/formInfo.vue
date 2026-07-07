@@ -11,7 +11,7 @@
                             :disabled="DM_STATUS.DM_STATUS10 === this.row.status || isEdit"
                             clearable
                         >
-                            <el-option v-for="dict in dict.type.dm_investigation_place" :key="dict.value" :label="dict.label" :value="dict.value" />
+                            <el-option v-for="dict in dict.type.dm_investigation_place" :key="dict.value" :label="dict.label" :value="dict.value" :disabled="dict.value === '3'" />
                         </el-select>
                     </el-form-item>
                 </el-col>
