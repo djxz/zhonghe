@@ -74,7 +74,7 @@ export default {
             this.resetForm('form');
             this.form = {
                 workOrderId: row.workOrderId,
-                terminateReason: undefined,
+                terminateReason: DM_STATUS.DM_STATUS2 === this.row.status ? '1' : undefined,
                 selfRejectReason: undefined,
                 terminateRemark: undefined
             };
@@ -92,7 +92,8 @@ export default {
                 if (valid) {
                     this.loading = true;
                     const { selfRejectReason, ...restForm } = this.form;
-                    terminate(restForm)
+
+                    terminate({ ...restForm })
                         .then(async res => {
                             if (res.code === 200) {
                                 await saveOrUpdateDisputeMediationExpand({
