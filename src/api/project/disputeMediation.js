@@ -781,3 +781,9 @@ export function getFulfillmentExpandListByWorkOrderId(workOrderId) {
     method: "get",
   });
 }
+export function getByDeptId(deptId) {
+  return request({
+    url: expandServiceUrl(`/project/bankDepart/getByDeptId/${deptId}`),
+    method: "get",
+  });
+}
